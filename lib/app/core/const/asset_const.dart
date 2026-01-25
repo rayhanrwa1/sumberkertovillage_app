@@ -7,4 +7,5 @@ class TAssetsConst {
 
   // TODO : Lottie Assets
   static const String success = 'assets/lottie/success.json';
+  static const String pointer = 'assets/images/pointer_map.png';
 }

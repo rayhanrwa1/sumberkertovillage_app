@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-
 import '../modules/auth/login/bindings/login_binding.dart';
 import '../modules/auth/login/views/login_view.dart';
 import '../modules/auth/otp/bindings/otp_binding.dart';
