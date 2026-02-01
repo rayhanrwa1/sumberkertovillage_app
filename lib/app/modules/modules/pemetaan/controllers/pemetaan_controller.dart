@@ -13,6 +13,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:sumberkerto_smart_village/app/modules/modules/pemetaan/services/directions_service.dart';
+import 'package:sumberkerto_smart_village/app/modules/modules/pemetaan/models/road_model.dart';
+
 class PemetaanController extends GetxController {
   final markers = <Marker>[].obs;
   final selectedAddress = ''.obs;
@@ -27,6 +30,21 @@ class PemetaanController extends GetxController {
   static PemetaanController get to => Get.find<PemetaanController>();
   final iconMapTempat = <String, String>{}.obs;
   final iconMapJalan = <String, String>{}.obs;
+  final RxList<RoadData> roads = <RoadData>[].obs;
+  final Rx<RoadData?> selectedRoadData = Rx<RoadData?>(null);
+  final Map<String, String> _polylineToRoadMap = {};
+
+  // Enhanced road drawing
+  RxBool isDrawingRoad = false.obs;
+  RxList<LatLng> tempRoadPoints = <LatLng>[].obs;
+  Rx<RoadCondition?> selectedRoadCondition = Rx<RoadCondition?>(null);
+  RxBool isLoadingRoute = false.obs;
+  Rx<LatLng?> currentPointerPosition = Rx<LatLng?>(null);
+
+  RxList<LatLng> roadPoints = <LatLng>[].obs;
+  LatLng? startPoint;
+
+  final DirectionsService _directionsService = DirectionsService();
 
   GoogleMapController? mapController;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
@@ -46,11 +64,127 @@ class PemetaanController extends GetxController {
     loadBoundaryFromGoogleAPI();
     loadIconMaps();
     loadMarkersFromFirebase();
+    loadJalanRusakFromFirebase();
+    loadRoads();
+  }
+
+  Set<Polyline> get polylines {
+    final Set<Polyline> allPolylines = {};
+
+    // Tambahkan polyline untuk semua jalan yang tersimpan
+    for (final road in roads) {
+      final polyline = Polyline(
+        polylineId: PolylineId(road.id),
+        points: road.points,
+        color: road.condition.color,
+        width: 6,
+        consumeTapEvents: true, // PENTING: Agar bisa diklik!
+        onTap: () {
+          onPolylineTapped(road.id);
+        },
+      );
+      allPolylines.add(polyline);
+      _polylineToRoadMap[road.id] = road.id;
+    }
+
+    // Tambahkan temporary polyline saat drawing
+    if (isDrawingRoad.value && tempRoadPoints.length > 1) {
+      allPolylines.add(
+        Polyline(
+          polylineId: const PolylineId('temp_road'),
+          points: tempRoadPoints,
+          color: selectedRoadCondition.value?.color ?? Colors.red,
+          width: 6,
+          patterns: [PatternItem.dash(20), PatternItem.gap(10)], // Dashed line
+        ),
+      );
+    }
+
+    return allPolylines;
+  }
+
+  void onPolylineTapped(String polylineId) {
+    print('Polyline tapped: $polylineId');
+
+    // Cari road data berdasarkan ID
+    final roadData = roads.firstWhereOrNull((road) => road.id == polylineId);
+
+    if (roadData != null) {
+      // Tutup marker detail jika ada
+      selectedMarkerData.value = null;
+
+      // Tampilkan road detail
+      selectedRoadData.value = roadData;
+
+      // Optional: Animate camera ke road
+      if (roadData.points.isNotEmpty) {
+        final bounds = _calculateBounds(roadData.points);
+        mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
+      }
+    }
+  }
+
+  LatLngBounds _calculateBounds(List<LatLng> points) {
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (final point in points) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
   }
 
   Future<void> _requestLocationPermission() async {
     final status = await Permission.location.request();
     hasLocationPermission.value = status.isGranted;
+  }
+
+  Future<void> loadRoads() async {
+    try {
+      final snapshot = await _database.child('maps/jalan_rusak').get();
+
+      if (snapshot.exists) {
+        final data = Map<String, dynamic>.from(snapshot.value as Map);
+
+        roads.clear();
+
+        for (var entry in data.entries) {
+          final roadData = Map<String, dynamic>.from(entry.value);
+          final points = (roadData['points'] as List)
+              .map((e) => LatLng(e['lat'], e['lng']))
+              .toList();
+
+          final condition = RoadCondition.values.firstWhere(
+            (e) => e.name == roadData['condition'],
+            orElse: () => RoadCondition.rusak,
+          );
+
+          // Tambahkan ke list roads
+          roads.add(
+            RoadData(
+              id: entry.key,
+              nama: roadData['nama'] ?? '',
+              deskripsi: roadData['deskripsi'] ?? '',
+              points: points,
+              condition: condition,
+            ),
+          );
+        }
+
+        _logger.i('ROAD', 'Loaded ${roads.length} roads from Firebase');
+      }
+    } catch (e) {
+      _logger.e('ROAD', 'Error loading roads', error: e);
+    }
   }
 
   Future<void> loadIconMaps() async {
@@ -72,7 +206,6 @@ class PemetaanController extends GetxController {
     String iconUrl,
     String iconType,
   ) async {
-    // Check cache first
     if (_iconCache.containsKey(iconType)) {
       return _iconCache[iconType]!;
     }
@@ -82,7 +215,6 @@ class PemetaanController extends GetxController {
       if (response.statusCode == 200) {
         final Uint8List bytes = response.bodyBytes;
 
-        // Resize and create custom marker
         final ui.Codec codec = await ui.instantiateImageCodec(
           bytes,
           targetWidth: 120,
@@ -99,7 +231,6 @@ class PemetaanController extends GetxController {
             resizedBytes,
           );
 
-          // Cache the icon
           _iconCache[iconType] = icon;
           return icon;
         }
@@ -108,7 +239,6 @@ class PemetaanController extends GetxController {
       _logger.e('MARKER_ICON', 'Error loading custom marker icon', error: e);
     }
 
-    // Fallback to default marker
     return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
   }
 
@@ -273,6 +403,253 @@ class PemetaanController extends GetxController {
         duration: const Duration(seconds: 2),
       );
     }
+  }
+
+  // Enhanced road drawing with pointer
+  void startDrawingRoad(RoadCondition condition) {
+    selectedRoadCondition.value = condition;
+    isDrawingRoad.value = true;
+    tempRoadPoints.clear();
+    updateTempPolyline();
+  }
+
+  Future<void> addRoadPointWithRoute(LatLng point) async {
+    if (tempRoadPoints.isEmpty) {
+      // First point - just add it
+      tempRoadPoints.add(point);
+      updateTempPolyline();
+      return;
+    }
+
+    // Get route from last point to new point
+    try {
+      isLoadingRoute.value = true;
+      final lastPoint = tempRoadPoints.last;
+
+      final routePoints = await _directionsService.getRoute(lastPoint, point);
+
+      if (routePoints.isNotEmpty) {
+        // Remove the first point as it's duplicate of last point
+        tempRoadPoints.addAll(routePoints.skip(1));
+      } else {
+        // Fallback to straight line if route fails
+        tempRoadPoints.add(point);
+      }
+
+      updateTempPolyline();
+    } catch (e) {
+      _logger.e('ROAD', 'Error getting route', error: e);
+      // Fallback to straight line
+      tempRoadPoints.add(point);
+      updateTempPolyline();
+    } finally {
+      isLoadingRoute.value = false;
+    }
+  }
+
+  void updateTempPolyline() {
+    polylines.removeWhere((p) => p.polylineId.value == 'temp_road');
+
+    if (tempRoadPoints.length < 2) return;
+
+    final condition = selectedRoadCondition.value ?? RoadCondition.rusak;
+
+    polylines.add(
+      Polyline(
+        polylineId: const PolylineId('temp_road'),
+        points: List.from(tempRoadPoints),
+        color: condition.color,
+        width: 6,
+        patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+      ),
+    );
+  }
+
+  void clearSelectedRoad() {
+    selectedRoadData.value = null;
+  }
+
+  Future<void> deleteRoad(String roadId) async {
+    try {
+      await _database.child('maps/jalan_rusak/$roadId').remove();
+
+      roads.removeWhere((road) => road.id == roadId);
+
+      if (selectedRoadData.value?.id == roadId) {
+        selectedRoadData.value = null;
+      }
+
+      _logger.i('ROAD', 'Road deleted: $roadId');
+
+      Get.snackbar(
+        'Berhasil',
+        'Jalan berhasil dihapus',
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      _logger.e('ROAD', 'Error deleting road', error: e);
+      Get.snackbar(
+        'Error',
+        'Gagal menghapus jalan: $e',
+        backgroundColor: const Color(0xFFEF4444),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> saveJalanRusak(String nama, String deskripsi) async {
+    if (tempRoadPoints.length < 2) {
+      Get.snackbar(
+        'Peringatan',
+        'Minimal 2 titik diperlukan',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    if (selectedRoadCondition.value == null) {
+      Get.snackbar(
+        'Peringatan',
+        'Pilih kondisi jalan terlebih dahulu',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      final id = DateTime.now().millisecondsSinceEpoch.toString();
+      final condition = selectedRoadCondition.value!;
+
+      final jalanData = {
+        'nama': nama,
+        'deskripsi': deskripsi,
+        'points': tempRoadPoints
+            .map((e) => {'lat': e.latitude, 'lng': e.longitude})
+            .toList(),
+        'condition': condition.name,
+        'created_at': ServerValue.timestamp,
+      };
+
+      await _database.child('maps/jalan_rusak/$id').set(jalanData);
+
+      roads.add(
+        RoadData(
+          id: id,
+          nama: nama,
+          deskripsi: deskripsi,
+          points: List.from(tempRoadPoints),
+          condition: condition,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      // Clear temp data
+      tempRoadPoints.clear();
+      isDrawingRoad.value = false;
+      selectedRoadCondition.value = null;
+
+      _logger.i('ROAD', 'Road saved successfully: $id');
+
+      Get.snackbar(
+        'Berhasil',
+        'Jalan berhasil ditambahkan',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      _logger.e('ROAD', 'Error saving road', error: e);
+      Get.snackbar(
+        'Error',
+        'Gagal menyimpan jalan: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void cancelDrawingRoad() {
+    tempRoadPoints.clear();
+    isDrawingRoad.value = false;
+    selectedRoadCondition.value = null;
+    polylines.removeWhere((p) => p.polylineId.value == 'temp_road');
+  }
+
+  Future<void> loadJalanRusakFromFirebase() async {
+    try {
+      final snapshot = await _database.child('maps/jalan_rusak').get();
+
+      if (snapshot.exists) {
+        final data = Map<String, dynamic>.from(snapshot.value as Map);
+
+        for (var entry in data.entries) {
+          final roadData = Map<String, dynamic>.from(entry.value);
+          final points = (roadData['points'] as List)
+              .map((e) => LatLng(e['lat'], e['lng']))
+              .toList();
+
+          final condition = RoadCondition.values.firstWhere(
+            (e) => e.name == roadData['condition'],
+            orElse: () => RoadCondition.rusak,
+          );
+
+          polylines.add(
+            Polyline(
+              polylineId: PolylineId(entry.key),
+              points: points,
+              color: condition.color,
+              width: 6,
+              onTap: () => _showRoadDetail(entry.key, roadData),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      _logger.e('ROAD', 'Error loading roads', error: e);
+    }
+  }
+
+  void _showRoadDetail(String id, Map<String, dynamic> data) {
+    final condition = RoadCondition.values.firstWhere(
+      (e) => e.name == data['condition'],
+      orElse: () => RoadCondition.rusak,
+    );
+
+    Get.dialog(
+      AlertDialog(
+        title: Text(data['nama']),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Kondisi: ${condition.label}'),
+            if (data['deskripsi'].toString().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Deskripsi: ${data['deskripsi']}'),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Get.back();
+              await _database.child('maps/jalan_rusak/$id').remove();
+              polylines.removeWhere((p) => p.polylineId.value == id);
+              Get.snackbar(
+                'Berhasil',
+                'Jalan berhasil dihapus',
+                backgroundColor: Colors.green,
+                colorText: Colors.white,
+              );
+            },
+            child: const Text('Hapus'),
+          ),
+          TextButton(onPressed: Get.back, child: const Text('Tutup')),
+        ],
+      ),
+    );
   }
 
   Future<List<String>> uploadImages(List<File> images) async {

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+
 import '../modules/auth/login/bindings/login_binding.dart';
 import '../modules/auth/login/views/login_view.dart';
 import '../modules/auth/otp/bindings/otp_binding.dart';
@@ -7,6 +8,8 @@ import '../modules/auth/register/bindings/register_binding.dart';
 import '../modules/auth/register/views/register_view.dart';
 import '../modules/auth/registersuccess/bindings/registersuccess_binding.dart';
 import '../modules/auth/registersuccess/views/registersuccess_view.dart';
+import '../modules/news/editnews/bindings/editnews_binding.dart';
+import '../modules/news/editnews/views/editnews_view.dart';
 import '../modules/history/bindings/history_binding.dart';
 import '../modules/history/views/history_view.dart';
 import '../modules/home/bindings/home_binding.dart';
@@ -17,7 +20,13 @@ import '../modules/modules/pemetaan/bindings/pemetaan_binding.dart';
 import '../modules/modules/pemetaan/views/pemetaan_view.dart';
 import '../modules/modules/penduduk/bindings/penduduk_binding.dart';
 import '../modules/modules/penduduk/views/penduduk_view.dart';
+import '../modules/news/bindings/news_binding.dart';
+import '../modules/news/views/news_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
+import '../modules/profile/changepassword/bindings/changepassword_binding.dart';
+import '../modules/profile/changepassword/views/changepassword_view.dart';
+import '../modules/profile/editprofile/bindings/editprofile_binding.dart';
+import '../modules/profile/editprofile/views/editprofile_view.dart';
 import '../modules/profile/views/profile_view.dart';
 import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
@@ -89,6 +98,26 @@ class AppPages {
       name: _Paths.PENDUDUK,
       page: () => const PendudukView(),
       binding: PendudukBinding(),
+    ),
+    GetPage(
+      name: _Paths.EDITPROFILE,
+      page: () => const EditprofileView(),
+      binding: EditprofileBinding(),
+    ),
+    GetPage(
+      name: _Paths.CHANGEPASSWORD,
+      page: () => const ChangePasswordView(),
+      binding: ChangepasswordBinding(),
+    ),
+    GetPage(
+      name: _Paths.NEWS,
+      page: () => const NewsView(),
+      binding: NewsBinding(),
+    ),
+    GetPage(
+      name: _Paths.EDITNEWS,
+      page: () => const EditnewsView(),
+      binding: EditnewsBinding(),
     ),
   ];
 }

@@ -16,6 +16,10 @@ abstract class Routes {
   static const MAIN = _Paths.MAIN;
   static const PEMETAAN = _Paths.PEMETAAN;
   static const PENDUDUK = _Paths.PENDUDUK;
+  static const EDITPROFILE = _Paths.EDITPROFILE;
+  static const CHANGEPASSWORD = _Paths.CHANGEPASSWORD;
+  static const NEWS = _Paths.NEWS;
+  static const EDITNEWS = _Paths.EDITNEWS;
 }
 
 abstract class _Paths {
@@ -33,4 +37,8 @@ abstract class _Paths {
   static const MAIN = '/main';
   static const PEMETAAN = '/pemetaan';
   static const PENDUDUK = '/penduduk';
+  static const EDITPROFILE = '/editprofile';
+  static const CHANGEPASSWORD = '/changepassword';
+  static const NEWS = '/news';
+  static const EDITNEWS = '/editnews';
 }

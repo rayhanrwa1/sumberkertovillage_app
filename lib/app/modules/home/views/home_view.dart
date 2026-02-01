@@ -75,7 +75,7 @@ class HomeView extends GetView<HomeController> {
                                           ),
                                     ),
                                     Text(
-                                      'Sumberkerto Smart Village',
+                                      'Sumberkerto ',
                                       style: TGoogleTextStyleConst
                                           .inter18SemiBold
                                           .copyWith(color: TColorsConst.white),
@@ -168,6 +168,88 @@ class HomeView extends GetView<HomeController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Bottom Bar untuk Profil Belum Lengkap
+                Obx(
+                  () => !controller.isProfileComplete.value
+                      ? Container(
+                          margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: TColorsConst.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: TColorsConst.blue500,
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              // Ilustrasi/Icon Person
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: TColorsConst.blue50,
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                child: Icon(
+                                  PhosphorIcons.userCircle(
+                                    PhosphorIconsStyle.fill,
+                                  ),
+                                  color: TColorsConst.blue500,
+                                  size: 50,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Complete your profile first to ensure access to all features and services.',
+                                      style: TGoogleTextStyleConst
+                                          .inter14Regular
+                                          .copyWith(
+                                            color: TColorsConst.neutral800,
+                                            height: 1.4,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GestureDetector(
+                                      onTap: () {
+                                        // Navigate to profile page
+                                        Get.toNamed(Routes.PROFILE);
+                                      },
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Complete Profile',
+                                            style: TGoogleTextStyleConst
+                                                .inter14SemiBold
+                                                .copyWith(
+                                                  color: TColorsConst.blue500,
+                                                ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            PhosphorIcons.arrowRight(
+                                              PhosphorIconsStyle.bold,
+                                            ),
+                                            color: TColorsConst.blue500,
+                                            size: 16,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                   child: Text(
@@ -233,77 +315,123 @@ class HomeView extends GetView<HomeController> {
     required String imagePath,
     required Color bgColor,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: TColorsConst.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: TColorsConst.neutral300.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+    return Obx(() {
+      final isEnabled = controller.isProfileComplete.value;
+
+      return Container(
+        decoration: BoxDecoration(
+          color: TColorsConst.white,
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            if (title == 'Pemetaan Wilayah') {
-              Get.toNamed(Routes.PEMETAAN);
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Image.asset(
-                    imagePath,
-                    width: 28,
-                    height: 28,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
-                          color: TColorsConst.neutral800,
+          boxShadow: [
+            BoxShadow(
+              color: TColorsConst.neutral300.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: isEnabled
+                ? () {
+                    if (title == 'Pemetaan Wilayah') {
+                      Get.toNamed(Routes.PEMETAAN);
+                    }
+                  }
+                : null,
+            child: Opacity(
+              opacity: isEnabled ? 1.0 : 0.5,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ColorFiltered(
+                        colorFilter: isEnabled
+                            ? const ColorFilter.mode(
+                                Colors.transparent,
+                                BlendMode.multiply,
+                              )
+                            : const ColorFilter.matrix([
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                1,
+                                0,
+                              ]),
+                        child: Image.asset(
+                          imagePath,
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TGoogleTextStyleConst.inter12Regular.copyWith(
-                          color: TColorsConst.neutral500,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TGoogleTextStyleConst.inter14SemiBold
+                                .copyWith(
+                                  color: isEnabled
+                                      ? TColorsConst.neutral800
+                                      : TColorsConst.neutral400,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: TGoogleTextStyleConst.inter12Regular
+                                .copyWith(
+                                  color: isEnabled
+                                      ? TColorsConst.neutral500
+                                      : TColorsConst.neutral400,
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Icon(
+                      PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
+                      color: isEnabled
+                          ? TColorsConst.neutral400
+                          : TColorsConst.neutral300,
+                      size: 20,
+                    ),
+                  ],
                 ),
-                Icon(
-                  PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
-                  color: TColorsConst.neutral400,
-                  size: 20,
-                ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

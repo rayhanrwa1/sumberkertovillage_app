@@ -47,17 +47,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-    <key>CADisableMinimumFrameDurationOnPhone</key>
-    <true/>
-    <key>UIApplicationSupportsIndirectInputEvents</key>
-    <true/>
 
-    <key>GMSApiKey</key>
-    <string>AIzaSyXXXXXXXXXXXX</string>
+	<key>GMSApiKey</key>
+	<string>AIzaSyCkymj5pLqGSbraogMIjOmgXMuqR583uUs</string>
 
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Aplikasi membutuhkan lokasi untuk menampilkan peta rumah warga.</string>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Aplikasi membutuhkan lokasi untuk menampilkan peta rumah warga.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Aplikasi membutuhkan Face ID untuk autentikasi biometrik</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aplikasi membutuhkan lokasi untuk menampilkan peta rumah warga</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Aplikasi membutuhkan lokasi untuk menampilkan peta rumah warga</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Aplikasi membutuhkan akses kamera untuk mengambil foto profil</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aplikasi membutuhkan akses galeri untuk memilih foto profil</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Aplikasi membutuhkan akses untuk menyimpan foto</string>
 </dict>
 </plist>

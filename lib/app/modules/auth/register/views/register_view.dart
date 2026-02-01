@@ -122,7 +122,7 @@ class RegisterView extends GetView<RegisterController> {
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              Get.offAllNamed(Routes.LOGIN);
+                              Get.toNamed(Routes.LOGIN);
                             },
                         ),
                       ],

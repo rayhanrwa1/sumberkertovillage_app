@@ -45,13 +45,9 @@ class TBottomNavbar extends StatelessWidget {
               ),
               _item(
                 index: 1,
-                label: 'Riwayat',
-                icon: PhosphorIcons.clockCounterClockwise(
-                  PhosphorIconsStyle.bold,
-                ),
-                iconFilled: PhosphorIcons.clockCounterClockwise(
-                  PhosphorIconsStyle.fill,
-                ),
+                label: 'Berita',
+                icon: PhosphorIcons.newspaper(PhosphorIconsStyle.bold),
+                iconFilled: PhosphorIcons.newspaper(PhosphorIconsStyle.fill),
               ),
               _item(
                 index: 2,

@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
       builder: (_, __) {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
-          title: "Application",
+          title: "Sumberkerto App",
           initialRoute: Routes.SPLASH,
           getPages: AppPages.routes,
         );
