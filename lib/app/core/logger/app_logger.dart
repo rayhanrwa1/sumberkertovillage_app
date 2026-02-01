@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart' as pkg_logger;
 
-//TODO : Global application logger (debug only)
-
+/// Global application logger (debug only)
 class AppLogger {
   static AppLogger? _instance;
   late pkg_logger.Logger _logger;
@@ -14,7 +13,7 @@ class AppLogger {
         errorMethodCount: 5,
         lineLength: 50,
         colors: true,
-        printEmojis: true,
+        printEmojis: false, // Disabled emojis
         dateTimeFormat: pkg_logger.DateTimeFormat.onlyTimeAndSinceStart,
       ),
     );

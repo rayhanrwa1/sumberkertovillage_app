@@ -3,14 +3,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 class TLoaders {
+  /// Open a simple loading dialog
   static void openLoadingDialog() {
     showDialog(
-      context:
-          Get.overlayContext!, // Use Get.overlayContext for overlay dialogs
-      barrierDismissible:
-          false, // The dialog can't be dismissed by tapping outside it
+      context: Get.overlayContext!,
+      barrierDismissible: false,
       builder: (_) => PopScope(
-        canPop: false, // Disable popping with the back button
+        canPop: false,
         child: Center(
           child: Container(
             height: 100.h,
@@ -19,7 +18,7 @@ class TLoaders {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Center(
+            child: const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
               ),
@@ -30,10 +29,44 @@ class TLoaders {
     );
   }
 
-  /// Stop the currently open loading dialog.
-  /// This method doesn't return anything.
-  static stopLoading() {
-    Navigator.of(Get.overlayContext!)
-        .pop(); // Close the dialog using the Navigator
+  /// Stop the currently open loading dialog
+  static void stopLoading() {
+    if (Get.isDialogOpen == true) {
+      Navigator.of(Get.overlayContext!).pop();
+    }
+  }
+
+  /// Open loading dialog with custom message
+  static void openLoadingDialogWithMessage(String message) {
+    showDialog(
+      context: Get.overlayContext!,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            padding: EdgeInsets.all(24.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  message,
+                  style: TextStyle(fontSize: 14.sp, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -1,13 +1,13 @@
 {
   "home": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fhome.png?alt=media",
-  "jalan_rusak": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fjalan_rusak.png?alt=media",
+  "kantor": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fkantor.png?alt=media",
+  "masjid": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fmasjid.png?alt=media",
   "penunjuk_arah": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fpenunjuk_arah.png?alt=media",
   "perempatan": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fperempatan.png?alt=media",
-  "pertanian": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fpertanian.png?alt=media",
-  "pertigaan": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fpertigaan.png?alt=media",
-  "peternakan": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fpeternakan.png?alt=media",
   "pointer": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fpointer.png?alt=media",
   "pom_bensin": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fpom_bensin.png?alt=media",
+  "sekolah": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fsekolah.png?alt=media",
   "titik_kumpul": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Ftitik_kumpul.png?alt=media",
+  "warung": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fwarung.png?alt=media",
   "warung_caffe": "https://firebasestorage.googleapis.com/v0/b/desa-sumberkerto.firebasestorage.app/o/icon%2Fwarung_caffe.png?alt=media"
 }

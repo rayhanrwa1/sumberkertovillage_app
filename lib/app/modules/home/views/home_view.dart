@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:sumberkerto_smart_village/app/core/const/asset_const.dart';
 import 'package:sumberkerto_smart_village/app/core/const/color_const.dart';
 import 'package:sumberkerto_smart_village/app/core/const/google_text_style_const.dart';
 import 'package:sumberkerto_smart_village/app/routes/app_pages.dart';
@@ -23,25 +24,7 @@ class HomeView extends GetView<HomeController> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    'https://images.pexels.com/photos/2132180/pexels-photo-2132180.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              TColorsConst.blue600,
-                              TColorsConst.blue500,
-                              TColorsConst.blue400,
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                  Image.asset(TAssetsConst.bgMaps, fit: BoxFit.cover),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -209,30 +192,20 @@ class HomeView extends GetView<HomeController> {
       {
         'title': 'Pemetaan Wilayah',
         'subtitle': 'Peta sawah, lahan, dan wilayah desa',
-        'icon': PhosphorIcons.mapTrifold(PhosphorIconsStyle.bold),
-        'color': TColorsConst.blue500,
-        'bgColor': TColorsConst.blue50,
+        'image': TAssetsConst.iconPemetaan,
+        'bgColor': const Color.fromARGB(255, 255, 255, 255),
       },
       {
         'title': 'Data Penduduk',
         'subtitle': 'NIK, KK, RT/RW, status warga',
-        'icon': PhosphorIcons.identificationCard(PhosphorIconsStyle.bold),
-        'color': TColorsConst.teal600,
-        'bgColor': TColorsConst.teal100,
+        'image': TAssetsConst.iconPenduduk,
+        'bgColor': const Color.fromARGB(255, 255, 255, 255),
       },
       {
         'title': 'Data Pertanian',
         'subtitle': 'Luas sawah, panen padi, pupuk',
-        'icon': PhosphorIcons.plant(PhosphorIconsStyle.bold),
-        'color': TColorsConst.green600,
-        'bgColor': TColorsConst.green100,
-      },
-      {
-        'title': 'Data Pernikahan',
-        'subtitle': 'Status nikah dan surat pengantar',
-        'icon': PhosphorIcons.heart(PhosphorIconsStyle.bold),
-        'color': TColorsConst.purple600,
-        'bgColor': TColorsConst.purple50,
+        'image': TAssetsConst.iconPertanian,
+        'bgColor': const Color.fromARGB(255, 255, 255, 255),
       },
     ];
 
@@ -247,8 +220,7 @@ class HomeView extends GetView<HomeController> {
         return _buildServiceCard(
           title: service['title'] as String,
           subtitle: service['subtitle'] as String,
-          icon: service['icon'] as IconData,
-          color: service['color'] as Color,
+          imagePath: service['image'] as String,
           bgColor: service['bgColor'] as Color,
         );
       },
@@ -258,8 +230,7 @@ class HomeView extends GetView<HomeController> {
   Widget _buildServiceCard({
     required String title,
     required String subtitle,
-    required IconData icon,
-    required Color color,
+    required String imagePath,
     required Color bgColor,
   }) {
     return Container(
@@ -293,7 +264,12 @@ class HomeView extends GetView<HomeController> {
                     color: bgColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: color, size: 24),
+                  child: Image.asset(
+                    imagePath,
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
