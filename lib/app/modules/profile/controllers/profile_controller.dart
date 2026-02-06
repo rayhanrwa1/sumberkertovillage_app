@@ -82,32 +82,87 @@ class ProfileController extends GetxController {
 
   Future<void> toggleBiometric(BuildContext context, bool value) async {
     try {
+      print('=== TOGGLE BIOMETRIC START ===');
+      print('Target value: $value');
+      print('Current value: ${isBiometricEnabled.value}');
+
       if (value) {
-        final ok = await _localAuth.authenticate(
-          localizedReason: 'Verifikasi identitas',
-        );
-        if (!ok) {
+        print('Requesting biometric authentication...');
+
+        // Cek apakah biometrik tersedia
+        final canCheck = await _localAuth.canCheckBiometrics;
+        final isDeviceSupported = await _localAuth.isDeviceSupported();
+
+        print('Can check biometrics: $canCheck');
+        print('Device supported: $isDeviceSupported');
+
+        if (!canCheck || !isDeviceSupported) {
+          context.showErrorSnackBar(
+            'Biometrik tidak tersedia di perangkat ini',
+          );
+          return;
+        }
+
+        // Verifikasi biometrik
+        bool authenticated = false;
+        try {
+          authenticated = await _localAuth.authenticate(
+            localizedReason:
+                'Verifikasi identitas untuk mengaktifkan biometrik',
+          );
+          print('Authentication result: $authenticated');
+        } catch (authError) {
+          print('Authentication error: $authError');
           context.showErrorSnackBar('Autentikasi biometrik gagal');
           return;
         }
+
+        if (!authenticated) {
+          context.showErrorSnackBar('Autentikasi biometrik dibatalkan');
+          return;
+        }
+
+        print('Authentication successful!');
       }
 
       final user = _auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        print('ERROR: User is null');
+        context.showErrorSnackBar('User tidak login');
+        return;
+      }
 
+      print('User UID: ${user.uid}');
+      print('Updating database...');
+
+      // Update ke database
       await _database.child('profile').child(user.uid).update({
         'biometricEnabled': value,
       });
 
+      print('Database updated successfully');
+
+      // Baru update state setelah berhasil
       isBiometricEnabled.value = value;
+
+      print('State updated: ${isBiometricEnabled.value}');
 
       context.showSuccessSnackBar(
         value
-            ? '${biometricType.value} diaktifkan'
+            ? '${biometricType.value} berhasil diaktifkan'
             : '${biometricType.value} dinonaktifkan',
       );
-    } catch (e) {
-      context.showErrorSnackBar('Gagal mengubah pengaturan');
+
+      print('=== TOGGLE BIOMETRIC END (SUCCESS) ===');
+    } catch (e, stackTrace) {
+      print('=== ERROR TOGGLING BIOMETRIC ===');
+      print('Error: $e');
+      print('Error type: ${e.runtimeType}');
+      print('Stack trace: $stackTrace');
+      context.showErrorSnackBar('Gagal mengubah pengaturan biometrik: $e');
+
+      // Pastikan state kembali ke posisi sebelumnya jika error
+      await loadBiometricSetting();
     }
   }
 
@@ -234,8 +289,8 @@ class ProfileController extends GetxController {
     try {
       await Get.dialog(
         AlertDialog(
-          backgroundColor: Colors.white, 
-          surfaceTintColor: Colors.white, 
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

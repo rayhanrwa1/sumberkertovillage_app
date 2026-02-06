@@ -39,37 +39,64 @@ class PemetaanView extends GetView<PemetaanController> {
             final pointCount = controller.tempRoadPoints.length;
 
             return Positioned(
-              top: 16.h,
+              top: 12.h,
               left: 16.w,
               right: 16.w,
               child: IgnorePointer(
                 child: Container(
-                  padding: EdgeInsets.all(12.w),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 10.h,
+                  ),
                   decoration: BoxDecoration(
-                    color: condition?.color ?? TColorsConst.errorMain,
-                    borderRadius: BorderRadius.circular(14.r),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12.r),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withOpacity(0.08),
                         blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
+                    border: Border.all(
+                      color: (condition?.color ?? TColorsConst.errorMain)
+                          .withOpacity(0.3),
+                    ),
                   ),
-                  child: Column(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        'Mode Gambar Jalan: ${condition?.label ?? ""}',
-                        textAlign: TextAlign.center,
-                        style: TGoogleTextStyleConst.inter14Bold.copyWith(
-                          color: Colors.white,
+                      Container(
+                        width: 32.w,
+                        height: 32.w,
+                        decoration: BoxDecoration(
+                          color: (condition?.color ?? TColorsConst.errorMain)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Icon(
+                          PhosphorIcons.roadHorizon(PhosphorIconsStyle.fill),
+                          color: condition?.color ?? TColorsConst.errorMain,
+                          size: 16.sp,
                         ),
                       ),
-                      TSpaces.v4(),
-                      Text(
-                        'Titik: $pointCount | Tap pointer untuk menambah',
-                        textAlign: TextAlign.center,
-                        style: TGoogleTextStyleConst.inter12Medium.copyWith(
-                          color: Colors.white.withOpacity(0.9),
+                      TSpaces.h12(),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              condition?.label ?? '',
+                              style: TGoogleTextStyleConst.inter14SemiBold
+                                  .copyWith(color: TColorsConst.neutral900),
+                            ),
+                            TSpaces.v4(),
+                            Text(
+                              '$pointCount titik | Tap pointer untuk menambah',
+                              style: TGoogleTextStyleConst.inter12Medium
+                                  .copyWith(color: TColorsConst.neutral500),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -89,14 +116,17 @@ class PemetaanView extends GetView<PemetaanController> {
             );
           }),
 
+          /// ===== DETAIL ROAD =====
           Obx(() {
             final roadData = controller.selectedRoadData.value;
             if (roadData == null) return const SizedBox.shrink();
             return RoadDetailCard(roadData: roadData, controller: controller);
           }),
 
+          /// ===== CENTER POINTER =====
           _buildCenterPointer(context),
 
+          /// ===== LOADING ROUTE =====
           Obx(() {
             if (!controller.isLoadingRoute.value) {
               return const SizedBox.shrink();
@@ -108,29 +138,38 @@ class PemetaanView extends GetView<PemetaanController> {
               child: Center(
                 child: Container(
                   padding: EdgeInsets.symmetric(
-                    horizontal: 20.w,
-                    vertical: 12.h,
+                    horizontal: 18.w,
+                    vertical: 10.h,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black87,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(20.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(
-                        width: 20.w,
-                        height: 20.h,
-                        child: const CircularProgressIndicator(
+                        width: 18.w,
+                        height: 18.h,
+                        child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                          valueColor: AlwaysStoppedAnimation(
+                            TColorsConst.blue500,
+                          ),
                         ),
                       ),
                       TSpaces.h12(),
                       Text(
                         'Mencari rute...',
                         style: TGoogleTextStyleConst.inter14Medium.copyWith(
-                          color: Colors.white,
+                          color: TColorsConst.neutral600,
                         ),
                       ),
                     ],
@@ -147,31 +186,40 @@ class PemetaanView extends GetView<PemetaanController> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // APP BAR
+  // ---------------------------------------------------------------------------
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       title: Text(
         'Desa Sumberkerto',
         style: TGoogleTextStyleConst.inter16Bold.copyWith(
-          color: TColorsConst.blue500,
+          color: TColorsConst.neutral900,
         ),
       ),
       centerTitle: true,
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
       backgroundColor: Colors.white,
-      iconTheme: IconThemeData(color: TColorsConst.blue500),
+      iconTheme: IconThemeData(color: TColorsConst.neutral600),
       actions: [
-        // IconButton(
-        //   icon: Icon(PhosphorIcons.info(PhosphorIconsStyle.bold)),
-        //   onPressed: () => _showInfoDialog(context),
-        // ),
-        IconButton(
-          icon: Icon(PhosphorIcons.list(PhosphorIconsStyle.bold)),
-          onPressed: () => _showMarkerListBottomSheet(context),
+        Padding(
+          padding: EdgeInsets.only(right: 4.w),
+          child: IconButton(
+            icon: Icon(
+              PhosphorIcons.list(PhosphorIconsStyle.regular),
+              size: 20.sp,
+            ),
+            onPressed: () => _showMarkerListBottomSheet(context),
+          ),
         ),
       ],
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // GOOGLE MAPS
+  // ---------------------------------------------------------------------------
   Widget _buildGoogleMaps() {
     return Obx(
       () => GoogleMap(
@@ -195,6 +243,9 @@ class PemetaanView extends GetView<PemetaanController> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // CENTER POINTER
+  // ---------------------------------------------------------------------------
   Widget _buildCenterPointer(BuildContext context) {
     return Obx(() {
       final isDrawing = controller.isDrawingRoad.value;
@@ -202,74 +253,60 @@ class PemetaanView extends GetView<PemetaanController> {
       final hasMarkerDetail = controller.selectedMarkerData.value != null;
       final hasRoadDetail = controller.selectedRoadData.value != null;
 
-      if (isLoading) {
-        return const SizedBox.shrink();
-      }
-
-      if (hasMarkerDetail || hasRoadDetail) {
+      if (isLoading || hasMarkerDetail || hasRoadDetail) {
         return const SizedBox.shrink();
       }
 
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: () async {
-                final center = controller.currentMapCenter.value;
-
-                if (isDrawing) {
-                  // Add road point with route
-                  await controller.addRoadPointWithRoute(center);
-                } else {
-                  // Add marker
-                  _showAddMarkerBottomSheet(context, center);
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                child: Column(
-                  children: [
-                    // Pointer icon
-                    Image.asset(
-                      TAssetsConst.pointer,
-                      width: isDrawing ? 56.w : 48.w,
-                      height: isDrawing ? 56.h : 48.h,
-                      color: isDrawing
-                          ? controller.selectedRoadCondition.value?.color
-                          : null,
-                    ),
-
-                    // Label for road mode
-                    if (isDrawing) ...[
-                      TSpaces.v8(),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 6.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black87,
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        child: Text(
-                          'TAP DISINI',
-                          style: TGoogleTextStyleConst.inter10Bold.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+        child: GestureDetector(
+          onTap: () async {
+            final center = controller.currentMapCenter.value;
+            if (isDrawing) {
+              await controller.addRoadPointWithRoute(center);
+            } else {
+              _showAddMarkerBottomSheet(context, center);
+            }
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                TAssetsConst.pointer,
+                width: isDrawing ? 52.w : 44.w,
+                height: isDrawing ? 52.h : 44.h,
+                color: isDrawing
+                    ? controller.selectedRoadCondition.value?.color
+                    : null,
               ),
-            ),
-          ],
+              if (isDrawing) ...[
+                TSpaces.v8(),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 4.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    'TAP DISINI',
+                    style: TGoogleTextStyleConst.inter10Bold.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       );
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // FLOATING ACTION BUTTONS
+  // ---------------------------------------------------------------------------
   Widget _buildFloatingActionButtons(BuildContext context) {
     return Positioned(
       bottom: 80.h,
@@ -277,11 +314,14 @@ class PemetaanView extends GetView<PemetaanController> {
       child: Obx(() {
         if (controller.isDrawingRoad.value) {
           return Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Finish button
-              FloatingActionButton.extended(
+              /// Finish
+              /// Finish
+              FloatingActionButton(
                 heroTag: 'finish_road',
                 backgroundColor: TColorsConst.blue500,
+                elevation: 4,
                 onPressed: () {
                   if (controller.tempRoadPoints.length < 2) {
                     Get.snackbar(
@@ -297,85 +337,83 @@ class PemetaanView extends GetView<PemetaanController> {
                     isScrollControlled: true,
                   );
                 },
-                icon: Icon(
-                  PhosphorIcons.checkCircle(PhosphorIconsStyle.bold),
+                child: Icon(
+                  PhosphorIcons.checkCircle(PhosphorIconsStyle.fill),
                   color: Colors.white,
-                ),
-                label: Text(
-                  'Selesai (${controller.tempRoadPoints.length})',
-                  style: TGoogleTextStyleConst.inter14Bold.copyWith(
-                    color: Colors.white,
-                  ),
+                  size: 24.sp,
                 ),
               ),
-              TSpaces.v8(),
 
-              // Undo button
-              if (controller.tempRoadPoints.length > 0)
+              /// Undo
+              if (controller.tempRoadPoints.isNotEmpty) ...[
+                TSpaces.v8(),
                 FloatingActionButton.small(
                   heroTag: 'undo_point',
-                  backgroundColor: TColorsConst.blue500,
+                  backgroundColor: Colors.white,
+                  elevation: 4,
                   onPressed: () {
-                    if (controller.tempRoadPoints.isNotEmpty) {
-                      controller.tempRoadPoints.removeLast();
-                      controller.updateTempPolyline();
-                    }
+                    controller.tempRoadPoints.removeLast();
+                    controller.updateTempPolyline();
                   },
                   child: Icon(
                     PhosphorIcons.arrowCounterClockwise(
-                      PhosphorIconsStyle.bold,
+                      PhosphorIconsStyle.regular,
                     ),
-                    color: Colors.white,
+                    color: TColorsConst.neutral600,
+                    size: 20.sp,
                   ),
                 ),
+              ],
 
-              if (controller.tempRoadPoints.length > 0) TSpaces.v8(),
-
-              // Cancel button
+              /// Cancel
+              TSpaces.v8(),
               FloatingActionButton.small(
                 heroTag: 'cancel_road',
-                backgroundColor: TColorsConst.blue500,
-                onPressed: () {
-                  controller.cancelDrawingRoad();
-                },
+                backgroundColor: Colors.white,
+                elevation: 4,
+                onPressed: () => controller.cancelDrawingRoad(),
                 child: Icon(
-                  PhosphorIcons.x(PhosphorIconsStyle.bold),
-                  color: Colors.white,
+                  PhosphorIcons.x(PhosphorIconsStyle.regular),
+                  color: TColorsConst.neutral600,
+                  size: 20.sp,
                 ),
               ),
             ],
           );
         }
 
+        /// Default FABs
         return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Draw road button
+            /// Draw road
             FloatingActionButton(
               heroTag: 'draw_road',
               backgroundColor: TColorsConst.blue500,
-              onPressed: () {
-                _showRoadTypePicker(context);
-              },
+              elevation: 4,
+              onPressed: () => _showRoadTypePicker(context),
               child: Icon(
-                PhosphorIcons.roadHorizon(PhosphorIconsStyle.bold),
+                PhosphorIcons.roadHorizon(PhosphorIconsStyle.fill),
                 color: Colors.white,
+                size: 22.sp,
               ),
             ),
 
+            /// Center map
             TSpaces.v8(),
-
-            // Center button
             FloatingActionButton.small(
               heroTag: 'center',
-              backgroundColor: TColorsConst.blue500,
+              backgroundColor: Colors.white,
+              elevation: 4,
               onPressed: () {
                 controller.mapController?.animateCamera(
                   CameraUpdate.newLatLngZoom(centerSumberkerto, 15.5),
                 );
               },
               child: Icon(
-                PhosphorIcons.crosshairSimple(PhosphorIconsStyle.bold),
-                color: Colors.white,
+                PhosphorIcons.crosshairSimple(PhosphorIconsStyle.regular),
+                color: TColorsConst.neutral600,
+                size: 20.sp,
               ),
             ),
           ],
@@ -384,6 +422,9 @@ class PemetaanView extends GetView<PemetaanController> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // BOTTOM SHEETS
+  // ---------------------------------------------------------------------------
   void _showRoadTypePicker(BuildContext context) {
     Get.bottomSheet(
       Container(
@@ -392,59 +433,88 @@ class PemetaanView extends GetView<PemetaanController> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TSpaces.v8(),
-              Container(
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: TColorsConst.neutral300,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-              TSpaces.v16(),
-
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
-                child: Text(
-                  'Pilih Jenis Jalan',
-                  style: TGoogleTextStyleConst.inter18Bold,
-                ),
-              ),
-
-              TSpaces.v16(),
-
-              ...RoadCondition.values.map((condition) {
-                IconData icon;
-                switch (condition) {
-                  case RoadCondition.rusak:
-                    icon = PhosphorIcons.warning(PhosphorIconsStyle.fill);
-                    break;
-                  case RoadCondition.gelap:
-                    icon = PhosphorIcons.lightbulb(PhosphorIconsStyle.fill);
-                    break;
-                  case RoadCondition.kabupaten:
-                    icon = PhosphorIcons.roadHorizon(PhosphorIconsStyle.fill);
-                    break;
-                }
-
-                return ListTile(
-                  leading: Icon(icon, color: condition.color),
-                  title: Text(
-                    condition.label,
-                    style: TGoogleTextStyleConst.inter16Medium,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20.w, 12.w, 20.w, 8.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// Drag handle
+                Center(
+                  child: Container(
+                    width: 36.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: TColorsConst.neutral300,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
                   ),
-                  onTap: () {
-                    Get.back();
-                    controller.startDrawingRoad(condition);
-                  },
-                );
-              }).toList(),
+                ),
+                TSpaces.v16(),
 
-              TSpaces.v16(),
-            ],
+                /// Title
+                Text(
+                  'Pilih Jenis Jalan',
+                  style: TGoogleTextStyleConst.inter16Bold.copyWith(
+                    color: TColorsConst.neutral900,
+                  ),
+                ),
+                TSpaces.v16(),
+
+                /// Options
+                ...RoadCondition.values.map((condition) {
+                  IconData icon;
+                  switch (condition) {
+                    case RoadCondition.rusak:
+                      icon = PhosphorIcons.warning(PhosphorIconsStyle.fill);
+                      break;
+                    case RoadCondition.gelap:
+                      icon = PhosphorIcons.lightbulb(PhosphorIconsStyle.fill);
+                      break;
+                    case RoadCondition.kabupaten:
+                      icon = PhosphorIcons.roadHorizon(PhosphorIconsStyle.fill);
+                      break;
+                  }
+
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 8.h),
+                    child: GestureDetector(
+                      onTap: () {
+                        Get.back();
+                        controller.startDrawingRoad(condition);
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38.w,
+                            height: 38.w,
+                            decoration: BoxDecoration(
+                              color: condition.color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: condition.color,
+                              size: 18.sp,
+                            ),
+                          ),
+                          TSpaces.h12(),
+                          Text(
+                            condition.label,
+                            style: TGoogleTextStyleConst.inter14Medium.copyWith(
+                              color: TColorsConst.neutral900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+
+                TSpaces.v8(),
+              ],
+            ),
           ),
         ),
       ),
@@ -464,20 +534,4 @@ class PemetaanView extends GetView<PemetaanController> {
       isScrollControlled: true,
     );
   }
-
-  // void _showInfoDialog(BuildContext context) {
-  //   Get.dialog(
-  //     AlertDialog(
-  //       title: const Text('Informasi Peta'),
-  //       content: const Text(
-  //         'Gunakan pointer di tengah peta untuk:\n\n'
-  //         '• Menambah marker lokasi\n'
-  //         '• Menambah titik jalan saat mode gambar jalan aktif\n\n'
-  //         'Jalan akan otomatis mengikuti rute yang ada.\n\n'
-  //         'Tap pada polyline untuk melihat detail jalan.',
-  //       ),
-  //       actions: [TextButton(onPressed: Get.back, child: const Text('Tutup'))],
-  //     ),
-  //   );
-  // }
 }

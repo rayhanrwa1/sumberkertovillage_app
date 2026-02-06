@@ -11,47 +11,42 @@ class NewsView extends GetView<NewsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(),
             _buildSearchBar(),
-            _buildTagFilters(),
+            _buildCategoryFilters(),
             Expanded(child: _buildNewsList()),
           ],
         ),
       ),
       floatingActionButton: Obx(
-        () => FloatingActionButton.extended(
-          onPressed: controller.isCreateDisabled.value
-              ? null
-              : controller.createNews,
-          backgroundColor: controller.isCreateDisabled.value
-              ? Colors.grey
-              : Colors.black,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            'Buat Berita',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
+        () => controller.isCreateDisabled.value
+            ? const SizedBox()
+            : FloatingActionButton(
+                onPressed: controller.createNews,
+                backgroundColor: const Color(0xFF2C3E50),
+                elevation: 2,
+                child: const Icon(Icons.add, color: Colors.white, size: 28),
+              ),
       ),
     );
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: const Row(
         children: [
-          const SizedBox(width: 8),
-          const Text(
-            'Cari Artikel',
+          Text(
+            'Berita',
             style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+              fontSize: 28,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2C3E50),
+              letterSpacing: -0.5,
             ),
           ),
         ],
@@ -64,17 +59,27 @@ class NewsView extends GetView<NewsController> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: TextField(
           onChanged: controller.updateSearch,
-          style: const TextStyle(color: Colors.black),
+          style: const TextStyle(color: Color(0xFF2C3E50), fontSize: 15),
           decoration: InputDecoration(
-            hintText: 'Search for an article...',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-            suffixIcon: Icon(Icons.tune, color: Colors.grey[600]),
+            hintText: 'Cari berita...',
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: Colors.grey[400],
+              size: 22,
+            ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -86,54 +91,88 @@ class NewsView extends GetView<NewsController> {
     );
   }
 
-  Widget _buildTagFilters() {
-    return Container(
-      height: 50,
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      child: Obx(
-        () => ListView.builder(
+  Widget _buildCategoryFilters() {
+    return Obx(() {
+      if (controller.availableCategories.isEmpty) {
+        return const SizedBox(height: 16);
+      }
+
+      return Container(
+        height: 46,
+        margin: const EdgeInsets.only(top: 16, bottom: 8),
+        child: ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: controller.availableTags.length,
+          itemCount: controller.availableCategories.length,
           itemBuilder: (context, index) {
-            final tag = controller.availableTags[index];
-            final isSelected = controller.selectedTags.contains(tag);
+            final category = controller.availableCategories[index];
+            final isSelected = controller.selectedCategory.value == category;
 
             return Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(tag),
-                selected: isSelected,
-                onSelected: (_) => controller.toggleTag(tag),
-                backgroundColor: Colors.grey[100],
-                selectedColor: Colors.black,
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black,
-                  fontSize: 13,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => controller.selectCategory(category),
                   borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: isSelected ? Colors.black : Colors.grey[300]!,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF2C3E50)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF2C3E50)
+                            : Colors.grey[300]!,
+                        width: 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF2C3E50).withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Center(
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF2C3E50),
+                          fontSize: 14,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             );
           },
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildNewsList() {
     return Obx(() {
       if (controller.isLoading.value && controller.newsList.isEmpty) {
         return const Center(
-          child: CircularProgressIndicator(color: Colors.black),
+          child: CircularProgressIndicator(
+            color: Color(0xFF2C3E50),
+            strokeWidth: 2,
+          ),
         );
       }
 
@@ -142,11 +181,15 @@ class NewsView extends GetView<NewsController> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.article_outlined, size: 64, color: Colors.grey[400]),
-              const SizedBox(height: 16),
+              Icon(Icons.article_outlined, size: 64, color: Colors.grey[300]),
+              const SizedBox(height: 12),
               Text(
-                'No articles found',
-                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                'Belum ada berita',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -155,7 +198,7 @@ class NewsView extends GetView<NewsController> {
 
       return RefreshIndicator(
         onRefresh: controller.refreshNews,
-        color: Colors.black,
+        color: const Color(0xFF2C3E50),
         child: ListView.builder(
           padding: const EdgeInsets.all(20),
           itemCount: controller.filteredNews.length,
@@ -178,16 +221,15 @@ class NewsView extends GetView<NewsController> {
     return GestureDetector(
       onTap: () => controller.openNewsDetail(news),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey[200]!),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -208,49 +250,51 @@ class NewsView extends GetView<NewsController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tags
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: news.tags.take(3).map((tag) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                  // Category
+                  if (news.tags.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C3E50).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        news.tags.first,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF2C3E50),
+                          fontWeight: FontWeight.w600,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          tag,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
+                      ),
+                    ),
+
+                  const SizedBox(height: 10),
 
                   // Title
                   Text(
                     news.title,
                     style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C3E50),
+                      height: 1.3,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
                   // Description
                   Text(
                     news.description,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      height: 1.4,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -259,13 +303,22 @@ class NewsView extends GetView<NewsController> {
                   // Author and stats
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Colors.grey[300],
-                        child: Icon(
-                          Icons.person,
-                          size: 14,
-                          color: Colors.grey[600],
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2C3E50).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            news.createdBy.substring(0, 1).toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF2C3E50),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -276,15 +329,15 @@ class NewsView extends GetView<NewsController> {
                             Text(
                               news.createdBy,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.black,
+                                color: Color(0xFF2C3E50),
                               ),
                             ),
                             Text(
-                              timeago.format(news.createdAt),
+                              timeago.format(news.createdAt, locale: 'id'),
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 color: Colors.grey[500],
                               ),
                             ),
@@ -294,23 +347,31 @@ class NewsView extends GetView<NewsController> {
                       Icon(
                         Icons.visibility_outlined,
                         size: 16,
-                        color: Colors.grey[500],
+                        color: Colors.grey[400],
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${news.viewCount}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Icon(
                         Icons.favorite_outline,
                         size: 16,
-                        color: Colors.grey[500],
+                        color: Colors.grey[400],
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${news.likeCount}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -328,20 +389,23 @@ class NewsView extends GetView<NewsController> {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       child: CachedNetworkImage(
         imageUrl: imageUrl,
-        height: 200,
+        height: 180,
         width: double.infinity,
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
-          height: 200,
-          color: Colors.grey[200],
+          height: 180,
+          color: Colors.grey[100],
           child: const Center(
-            child: CircularProgressIndicator(color: Colors.black),
+            child: CircularProgressIndicator(
+              color: Color(0xFF2C3E50),
+              strokeWidth: 2,
+            ),
           ),
         ),
         errorWidget: (context, url, error) => Container(
-          height: 200,
-          color: Colors.grey[200],
-          child: const Icon(Icons.error, color: Colors.black),
+          height: 180,
+          color: Colors.grey[100],
+          child: Icon(Icons.error_outline, color: Colors.grey[400]),
         ),
       ),
     );
@@ -355,33 +419,33 @@ class NewsView extends GetView<NewsController> {
           child: news.videoThumbnail != null
               ? CachedNetworkImage(
                   imageUrl: news.videoThumbnail!,
-                  height: 200,
+                  height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   placeholder: (context, url) =>
-                      Container(height: 200, color: Colors.grey[200]),
+                      Container(height: 180, color: Colors.grey[100]),
                 )
               : Container(
-                  height: 200,
-                  color: Colors.grey[300],
-                  child: const Icon(
-                    Icons.video_library,
+                  height: 180,
+                  color: Colors.grey[200],
+                  child: Icon(
+                    Icons.video_library_outlined,
                     size: 48,
-                    color: Colors.black,
+                    color: Colors.grey[400],
                   ),
                 ),
         ),
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.2),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16),
               ),
             ),
             child: const Center(
               child: Icon(
-                Icons.play_circle_filled,
+                Icons.play_circle_outline,
                 size: 56,
                 color: Colors.white,
               ),

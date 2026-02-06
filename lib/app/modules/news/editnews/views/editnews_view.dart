@@ -9,20 +9,21 @@ class EditnewsView extends GetView<EditnewsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2C3E50)),
           onPressed: () => Get.back(),
         ),
         title: Obx(
           () => Text(
-            controller.isEditMode.value ? 'Edit Berita' : 'Berita Baru',
+            controller.isEditMode.value ? 'Edit Berita' : 'Buat Berita',
             style: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
+              color: Color(0xFF2C3E50),
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
             ),
           ),
         ),
@@ -36,18 +37,18 @@ class EditnewsView extends GetView<EditnewsController> {
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.black,
+                        color: Color(0xFF2C3E50),
                       ),
                     ),
                   )
                 : TextButton(
                     onPressed: controller.submitNews,
                     child: const Text(
-                      'Publish',
+                      'Simpan',
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2C3E50),
                       ),
                     ),
                   ),
@@ -60,11 +61,14 @@ class EditnewsView extends GetView<EditnewsController> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: Colors.black),
+                    CircularProgressIndicator(
+                      color: Color(0xFF2C3E50),
+                      strokeWidth: 2,
+                    ),
                     SizedBox(height: 16),
                     Text(
-                      'Compressing media...',
-                      style: TextStyle(color: Colors.black),
+                      'Memproses media...',
+                      style: TextStyle(color: Color(0xFF2C3E50), fontSize: 14),
                     ),
                   ],
                 ),
@@ -77,12 +81,12 @@ class EditnewsView extends GetView<EditnewsController> {
                     _buildMediaSection(),
                     const SizedBox(height: 24),
                     _buildTitleField(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     _buildDescriptionField(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+                    _buildCategoryField(),
+                    const SizedBox(height: 20),
                     _buildLocationField(),
-                    const SizedBox(height: 24),
-                    _buildTagsSection(),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -98,20 +102,20 @@ class EditnewsView extends GetView<EditnewsController> {
         const Text(
           'Media',
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
           ),
         ),
         const SizedBox(height: 12),
 
         // Banner Image
         _buildBannerSection(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         // Images
         _buildImagesSection(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         // Video
         _buildVideoSection(),
@@ -128,7 +132,7 @@ class EditnewsView extends GetView<EditnewsController> {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.file(
                     controller.bannerImage.value!,
-                    height: 200,
+                    height: 180,
                     width: double.infinity,
                     fit: BoxFit.cover,
                   ),
@@ -136,98 +140,118 @@ class EditnewsView extends GetView<EditnewsController> {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black54,
+                  child: GestureDetector(
+                    onTap: controller.removeBanner,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
-                    onPressed: controller.removeBanner,
                   ),
                 ),
                 Positioned(
                   bottom: 8,
                   left: 8,
-                  child: Chip(
-                    label: Text(
-                      'Banner',
-                      style: TextStyle(fontSize: 11, color: Colors.black),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
                     ),
-                    backgroundColor: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'Banner',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF2C3E50),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
             )
           : _buildAddMediaButton(
-              'Add Banner Image',
-              Icons.image,
+              'Tambah Banner',
+              Icons.image_outlined,
               controller.pickBannerImage,
             ),
     );
   }
 
   Widget _buildImagesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Obx(
-          () => controller.images.isEmpty
-              ? _buildAddMediaButton(
-                  'Add Images (Max 2)',
-                  Icons.photo_library,
-                  controller.pickImages,
-                )
-              : Column(
-                  children: [
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
+    return Obx(
+      () => controller.images.isEmpty
+          ? _buildAddMediaButton(
+              'Tambah Gambar (Maks 2)',
+              Icons.photo_library_outlined,
+              controller.pickImages,
+            )
+          : Column(
+              children: [
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: controller.images.length,
+                  itemBuilder: (context, index) {
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            controller.images[index],
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
                           ),
-                      itemCount: controller.images.length,
-                      itemBuilder: (context, index) {
-                        return Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                controller.images[index],
-                                width: double.infinity,
-                                height: double.infinity,
-                                fit: BoxFit.cover,
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () => controller.removeImage(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
                               ),
                             ),
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: IconButton(
-                                icon: const Icon(Icons.close, size: 18),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: Colors.black54,
-                                  padding: const EdgeInsets.all(4),
-                                ),
-                                onPressed: () => controller.removeImage(index),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    if (controller.images.length < 2) ...[
-                      const SizedBox(height: 12),
-                      _buildAddMediaButton(
-                        'Add More Images',
-                        Icons.add_photo_alternate,
-                        controller.pickImages,
-                      ),
-                    ],
-                  ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-        ),
-      ],
+                if (controller.images.length < 2) ...[
+                  const SizedBox(height: 12),
+                  _buildAddMediaButton(
+                    'Tambah Gambar Lagi',
+                    Icons.add_photo_alternate_outlined,
+                    controller.pickImages,
+                  ),
+                ],
+              ],
+            ),
     );
   }
 
@@ -241,18 +265,18 @@ class EditnewsView extends GetView<EditnewsController> {
                   child: controller.videoThumbnail.value != null
                       ? Image.file(
                           controller.videoThumbnail.value!,
-                          height: 200,
+                          height: 180,
                           width: double.infinity,
                           fit: BoxFit.cover,
                         )
                       : Container(
-                          height: 200,
-                          color: Colors.grey[300],
-                          child: const Center(
+                          height: 180,
+                          color: Colors.grey[200],
+                          child: Center(
                             child: Icon(
-                              Icons.video_library,
+                              Icons.video_library_outlined,
                               size: 48,
-                              color: Colors.black,
+                              color: Colors.grey[400],
                             ),
                           ),
                         ),
@@ -260,12 +284,12 @@ class EditnewsView extends GetView<EditnewsController> {
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Center(
                       child: Icon(
-                        Icons.play_circle_filled,
+                        Icons.play_circle_outline,
                         size: 56,
                         color: Colors.white,
                       ),
@@ -275,12 +299,20 @@ class EditnewsView extends GetView<EditnewsController> {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black54,
+                  child: GestureDetector(
+                    onTap: controller.removeVideo,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
-                    onPressed: controller.removeVideo,
                   ),
                 ),
                 Positioned(
@@ -292,15 +324,23 @@ class EditnewsView extends GetView<EditnewsController> {
                       if (snapshot.hasData) {
                         final sizeMB = (snapshot.data! / 1024 / 1024)
                             .toStringAsFixed(2);
-                        return Chip(
-                          label: Text(
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
                             'Video ($sizeMB MB)',
                             style: const TextStyle(
                               fontSize: 11,
-                              color: Colors.black,
+                              color: Color(0xFF2C3E50),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          backgroundColor: Colors.white,
                         );
                       }
                       return const SizedBox();
@@ -310,8 +350,8 @@ class EditnewsView extends GetView<EditnewsController> {
               ],
             )
           : _buildAddMediaButton(
-              'Add Video (Max 1MB)',
-              Icons.videocam,
+              'Tambah Video (Maks 1MB)',
+              Icons.videocam_outlined,
               controller.pickVideo,
             ),
     );
@@ -322,9 +362,9 @@ class EditnewsView extends GetView<EditnewsController> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        height: 120,
+        height: 100,
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey[300]!),
         ),
@@ -332,11 +372,15 @@ class EditnewsView extends GetView<EditnewsController> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 32, color: Colors.grey[600]),
-              const SizedBox(height: 8),
+              Icon(icon, size: 28, color: Colors.grey[500]),
+              const SizedBox(height: 6),
               Text(
                 label,
-                style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -350,29 +394,31 @@ class EditnewsView extends GetView<EditnewsController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Title',
+          'Judul',
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller.titleController,
-          style: const TextStyle(color: Colors.black),
-          decoration: InputDecoration(
-            hintText: 'Enter news title...',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.grey[100],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.all(16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
           ),
-          maxLines: 2,
+          child: TextField(
+            controller: controller.titleController,
+            style: const TextStyle(color: Color(0xFF2C3E50), fontSize: 15),
+            decoration: InputDecoration(
+              hintText: 'Masukkan judul berita...',
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+            ),
+            maxLines: 2,
+          ),
         ),
       ],
     );
@@ -383,30 +429,135 @@ class EditnewsView extends GetView<EditnewsController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Description',
+          'Deskripsi',
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller.descriptionController,
-          style: const TextStyle(color: Colors.black),
-          decoration: InputDecoration(
-            hintText: 'Write your description here...',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.grey[100],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.all(16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
           ),
-          maxLines: 6,
+          child: TextField(
+            controller: controller.descriptionController,
+            style: const TextStyle(color: Color(0xFF2C3E50), fontSize: 15),
+            decoration: InputDecoration(
+              hintText: 'Tulis deskripsi...',
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+            ),
+            maxLines: 6,
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Kategori',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: TextField(
+            controller: controller.categoryController,
+            style: const TextStyle(color: Color(0xFF2C3E50), fontSize: 15),
+            decoration: InputDecoration(
+              hintText: 'Masukkan kategori...',
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+              prefixIcon: const Icon(
+                Icons.category_outlined,
+                color: Color(0xFF2C3E50),
+                size: 20,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+            ),
+            onChanged: (value) {
+              controller.selectedCategory.value = value.trim();
+            },
+          ),
+        ),
+
+        // Show available categories if any
+        Obx(() {
+          if (controller.availableCategories.isEmpty) {
+            return const SizedBox();
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 12),
+              Text(
+                'Kategori Populer',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: controller.availableCategories.map((category) {
+                  final isSelected =
+                      controller.selectedCategory.value == category;
+                  return GestureDetector(
+                    onTap: () => controller.selectCategory(category),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF2C3E50)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF2C3E50)
+                              : Colors.grey[300]!,
+                        ),
+                      ),
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF2C3E50),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        }),
       ],
     );
   }
@@ -416,40 +567,43 @@ class EditnewsView extends GetView<EditnewsController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Location (Optional)',
+          'Lokasi (Opsional)',
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
           ),
         ),
         const SizedBox(height: 8),
         Stack(
           children: [
-            TextField(
-              controller: controller.locationController,
-              style: const TextStyle(color: Colors.black),
-              decoration: InputDecoration(
-                hintText: 'Search location...',
-                hintStyle: TextStyle(color: Colors.grey[400]),
-                prefixIcon: const Icon(
-                  Icons.location_on_outlined,
-                  color: Colors.black,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: TextField(
+                controller: controller.locationController,
+                style: const TextStyle(color: Color(0xFF2C3E50), fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: 'Cari lokasi...',
+                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+                  prefixIcon: const Icon(
+                    Icons.location_on_outlined,
+                    color: Color(0xFF2C3E50),
+                    size: 20,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.clear, color: Colors.grey[400], size: 20),
+                    onPressed: () {
+                      controller.locationController.clear();
+                      controller.showLocationSuggestions.value = false;
+                    },
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(16),
                 ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.grey),
-                  onPressed: () {
-                    controller.locationController.clear();
-                    controller.showLocationSuggestions.value = false;
-                  },
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.all(16),
               ),
             ),
             Obx(
@@ -478,11 +632,15 @@ class EditnewsView extends GetView<EditnewsController> {
                               return ListTile(
                                 leading: const Icon(
                                   Icons.location_on,
-                                  color: Colors.black,
+                                  color: Color(0xFF2C3E50),
+                                  size: 20,
                                 ),
                                 title: Text(
                                   location,
-                                  style: const TextStyle(color: Colors.black),
+                                  style: const TextStyle(
+                                    color: Color(0xFF2C3E50),
+                                    fontSize: 14,
+                                  ),
                                 ),
                                 onTap: () =>
                                     controller.selectLocation(location),
@@ -495,100 +653,6 @@ class EditnewsView extends GetView<EditnewsController> {
                   : const SizedBox(),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTagsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tags',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Select relevant tags or add your own',
-          style: TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-        const SizedBox(height: 12),
-
-        // Custom tag input
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller.tagController,
-                style: const TextStyle(color: Colors.black),
-                decoration: InputDecoration(
-                  hintText: 'Add custom tag...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                onSubmitted: (_) => controller.addCustomTag(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: controller.addCustomTag,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        Obx(
-          () => Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: controller.availableTags.map((tag) {
-              final isSelected = controller.selectedTags.contains(tag);
-              return FilterChip(
-                label: Text(tag),
-                selected: isSelected,
-                onSelected: (_) => controller.toggleTag(tag),
-                backgroundColor: Colors.grey[100],
-                selectedColor: Colors.black,
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black,
-                  fontSize: 13,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: isSelected ? Colors.black : Colors.grey[300]!,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
         ),
       ],
     );

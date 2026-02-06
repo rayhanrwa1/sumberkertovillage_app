@@ -432,10 +432,13 @@ class ProfileView extends GetView<ProfileController> {
               ),
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: TColorsConst.green500,
+          // Gunakan Obx untuk reaktif
+          Obx(
+            () => Switch(
+              value: controller.isBiometricEnabled.value,
+              onChanged: (val) => onChanged(val),
+              activeColor: TColorsConst.green500,
+            ),
           ),
         ],
       ),

@@ -15,7 +15,7 @@ class NewsController extends GetxController {
   final GetStorage _storage2 = GetStorage();
 
   final ImagePicker _picker = ImagePicker();
-  final isCreateDisabled = true.obs;
+  final isCreateDisabled = false.obs;
 
   // Observable lists
   final newsList = <NewsModel>[].obs;
@@ -26,20 +26,12 @@ class NewsController extends GetxController {
   final isLoadingMore = false.obs;
 
   // Filter options
-  final selectedTags = <String>[].obs;
+  final selectedCategory =
+      ''.obs; // Changed from selectedTags to single category
   final searchQuery = ''.obs;
 
-  // Available tags
-  final availableTags = <String>[
-    'Sleep',
-    'Mindfulness',
-    'Socialization',
-    'Personal Growth',
-    'Self-Care',
-    'Mental Health',
-    'Wellness',
-    'Stress',
-  ].obs;
+  // Available categories - Top 5 from database
+  final availableCategories = <String>[].obs;
 
   // Pagination
   int _currentPage = 0;
@@ -50,11 +42,12 @@ class NewsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    fetchCategories();
     fetchNews();
 
     // Listen to search and filter changes
     ever(searchQuery, (_) => applyFilters());
-    ever(selectedTags, (_) => applyFilters());
+    ever(selectedCategory, (_) => applyFilters());
   }
 
   @override
@@ -66,6 +59,37 @@ class NewsController extends GetxController {
   /// Get current user ID from GetStorage
   String? get _currentUserId {
     return _storage2.read('userId') ?? _auth.currentUser?.uid;
+  }
+
+  /// Fetch top 5 categories from database
+  Future<void> fetchCategories() async {
+    try {
+      final snapshot = await _database.child('news').get();
+
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final Map<String, int> categoryCount = {};
+
+        // Count category occurrences
+        data.forEach((key, value) {
+          if (value is Map && value['category'] != null) {
+            final category = value['category'] as String;
+            categoryCount[category] = (categoryCount[category] ?? 0) + 1;
+          }
+        });
+
+        // Sort by count and take top 5
+        final sortedCategories = categoryCount.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+        availableCategories.value = sortedCategories
+            .take(5)
+            .map((e) => e.key)
+            .toList();
+      }
+    } catch (e) {
+      print('Error fetching categories: $e');
+    }
   }
 
   /// Fetch news from Firebase Realtime Database
@@ -129,7 +153,7 @@ class NewsController extends GetxController {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to fetch news: $e',
+        'Gagal memuat berita',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -141,10 +165,10 @@ class NewsController extends GetxController {
   void applyFilters() {
     var filtered = newsList.toList();
 
-    // Apply tag filter
-    if (selectedTags.isNotEmpty) {
+    // Apply category filter
+    if (selectedCategory.value.isNotEmpty) {
       filtered = filtered.where((news) {
-        return news.tags.any((tag) => selectedTags.contains(tag));
+        return news.tags.contains(selectedCategory.value);
       }).toList();
     }
 
@@ -153,20 +177,19 @@ class NewsController extends GetxController {
       final query = searchQuery.value.toLowerCase();
       filtered = filtered.where((news) {
         return news.title.toLowerCase().contains(query) ||
-            news.description.toLowerCase().contains(query) ||
-            news.tags.any((tag) => tag.toLowerCase().contains(query));
+            news.description.toLowerCase().contains(query);
       }).toList();
     }
 
     filteredNews.value = filtered;
   }
 
-  /// Toggle tag filter
-  void toggleTag(String tag) {
-    if (selectedTags.contains(tag)) {
-      selectedTags.remove(tag);
+  /// Select category filter
+  void selectCategory(String category) {
+    if (selectedCategory.value == category) {
+      selectedCategory.value = ''; // Deselect if already selected
     } else {
-      selectedTags.add(tag);
+      selectedCategory.value = category;
     }
   }
 
@@ -204,7 +227,7 @@ class NewsController extends GetxController {
     try {
       final userId = _currentUserId;
       if (userId == null) {
-        Get.snackbar('Error', 'Please login to like news');
+        Get.snackbar('Error', 'Silakan login terlebih dahulu');
         return;
       }
 
@@ -241,7 +264,7 @@ class NewsController extends GetxController {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to update like: $e',
+        'Gagal memperbarui like',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -276,6 +299,7 @@ class NewsController extends GetxController {
 
   /// Refresh news list
   Future<void> refreshNews() async {
+    await fetchCategories();
     await fetchNews(refresh: true);
   }
 }

@@ -78,12 +78,14 @@ class LoginView extends GetView<LoginController> {
             ),
 
             Divider(color: TColorsConst.neutral200, height: 1),
+
             // ===== FOOTER =====
             Padding(
               padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 24.h),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // BUTTON LOGIN BIASA
                   Obx(
                     () => TButtons.primary(
                       onPressed: controller.isLoading.value
@@ -95,6 +97,55 @@ class LoginView extends GetView<LoginController> {
                       height: 48.h,
                     ),
                   ),
+
+                  // BUTTON BIOMETRIK (TAMBAHKAN DI SINI)
+                  Obx(() {
+                    if (controller.canUseBiometric.value) {
+                      return Column(
+                        children: [
+                          TSpaces.v12(),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(color: TColorsConst.neutral300),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                                child: Text(
+                                  'atau',
+                                  style: TGoogleTextStyleConst.inter12Regular
+                                      .copyWith(color: TColorsConst.neutral500),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(color: TColorsConst.neutral300),
+                              ),
+                            ],
+                          ),
+                          TSpaces.v12(),
+                          OutlinedButton.icon(
+                            onPressed: controller.isLoading.value
+                                ? null
+                                : () => controller.loginWithBiometric(context),
+                            icon: const Icon(Icons.fingerprint),
+                            label: const Text('Masuk dengan Biometrik'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: Size(double.infinity, 48.h),
+                              side: BorderSide(
+                                color: TColorsConst.blue500,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              foregroundColor: TColorsConst.blue500,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }),
 
                   TSpaces.v16(),
 

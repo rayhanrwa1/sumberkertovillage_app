@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sumberkerto_smart_village/app/core/logger/app_logger.dart';
+import 'package:sumberkerto_smart_village/app/utils/snackbar_utils.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -57,6 +58,16 @@ class PemetaanController extends GetxController {
 
   final Map<String, BitmapDescriptor> _iconCache = {};
 
+  // ---------------------------------------------------------------------------
+  // Helper: show snackbar dari controller menggunakan Get.context
+  // ---------------------------------------------------------------------------
+  void _showSnackbar(String message, TSnackbarType type) {
+    final context = Get.context;
+    if (context != null) {
+      TSnackbar.show(context, message: message, type: type);
+    }
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -68,17 +79,19 @@ class PemetaanController extends GetxController {
     loadRoads();
   }
 
+  // ---------------------------------------------------------------------------
+  // POLYLINES
+  // ---------------------------------------------------------------------------
   Set<Polyline> get polylines {
     final Set<Polyline> allPolylines = {};
 
-    // Tambahkan polyline untuk semua jalan yang tersimpan
     for (final road in roads) {
       final polyline = Polyline(
         polylineId: PolylineId(road.id),
         points: road.points,
         color: road.condition.color,
         width: 6,
-        consumeTapEvents: true, // PENTING: Agar bisa diklik!
+        consumeTapEvents: true,
         onTap: () {
           onPolylineTapped(road.id);
         },
@@ -87,7 +100,6 @@ class PemetaanController extends GetxController {
       _polylineToRoadMap[road.id] = road.id;
     }
 
-    // Tambahkan temporary polyline saat drawing
     if (isDrawingRoad.value && tempRoadPoints.length > 1) {
       allPolylines.add(
         Polyline(
@@ -95,7 +107,7 @@ class PemetaanController extends GetxController {
           points: tempRoadPoints,
           color: selectedRoadCondition.value?.color ?? Colors.red,
           width: 6,
-          patterns: [PatternItem.dash(20), PatternItem.gap(10)], // Dashed line
+          patterns: [PatternItem.dash(20), PatternItem.gap(10)],
         ),
       );
     }
@@ -104,19 +116,14 @@ class PemetaanController extends GetxController {
   }
 
   void onPolylineTapped(String polylineId) {
-    print('Polyline tapped: $polylineId');
+    _logger.i('ROAD', 'Polyline tapped: $polylineId');
 
-    // Cari road data berdasarkan ID
     final roadData = roads.firstWhereOrNull((road) => road.id == polylineId);
 
     if (roadData != null) {
-      // Tutup marker detail jika ada
       selectedMarkerData.value = null;
-
-      // Tampilkan road detail
       selectedRoadData.value = roadData;
 
-      // Optional: Animate camera ke road
       if (roadData.points.isNotEmpty) {
         final bounds = _calculateBounds(roadData.points);
         mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
@@ -143,11 +150,17 @@ class PemetaanController extends GetxController {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // PERMISSION
+  // ---------------------------------------------------------------------------
   Future<void> _requestLocationPermission() async {
     final status = await Permission.location.request();
     hasLocationPermission.value = status.isGranted;
   }
 
+  // ---------------------------------------------------------------------------
+  // LOAD ROADS
+  // ---------------------------------------------------------------------------
   Future<void> loadRoads() async {
     try {
       final snapshot = await _database.child('maps/jalan_rusak').get();
@@ -168,7 +181,6 @@ class PemetaanController extends GetxController {
             orElse: () => RoadCondition.rusak,
           );
 
-          // Tambahkan ke list roads
           roads.add(
             RoadData(
               id: entry.key,
@@ -187,6 +199,9 @@ class PemetaanController extends GetxController {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // ICON MAPS
+  // ---------------------------------------------------------------------------
   Future<void> loadIconMaps() async {
     final tempatSnap = await _database.child('icon_maps').get();
     final jalanSnap = await _database.child('icon_jalan').get();
@@ -242,6 +257,9 @@ class PemetaanController extends GetxController {
     return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
   }
 
+  // ---------------------------------------------------------------------------
+  // LOAD MARKERS
+  // ---------------------------------------------------------------------------
   Future<void> loadMarkersFromFirebase() async {
     try {
       isLoading.value = true;
@@ -274,7 +292,6 @@ class PemetaanController extends GetxController {
 
             markerDataMap[entry.key] = markerData;
 
-            // Get custom icon
             BitmapDescriptor markerIcon = BitmapDescriptor.defaultMarker;
             if (iconUrl.isNotEmpty) {
               markerIcon = await _getMarkerIcon(iconUrl, iconType);
@@ -301,19 +318,15 @@ class PemetaanController extends GetxController {
       }
     } catch (e) {
       _logger.e('MARKER', 'Error loading markers', error: e);
-      Get.snackbar(
-        'Error',
-        'Gagal memuat markers: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
+      _showSnackbar('Gagal memuat markers', TSnackbarType.error);
     } finally {
       isLoading.value = false;
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // FILTER & SEARCH MARKERS
+  // ---------------------------------------------------------------------------
   void updateFilteredMarkers() {
     if (searchQuery.value.isEmpty) {
       filteredMarkers.value = markerDataMap.entries.map((e) {
@@ -347,10 +360,12 @@ class PemetaanController extends GetxController {
     updateFilteredMarkers();
   }
 
+  // ---------------------------------------------------------------------------
+  // MARKER TAP & DELETE
+  // ---------------------------------------------------------------------------
   void onMarkerTapped(String markerId) {
     selectedMarkerData.value = markerDataMap[markerId];
 
-    // Animate camera to marker
     if (mapController != null && markerDataMap.containsKey(markerId)) {
       final markerData = markerDataMap[markerId]!;
       final lat = double.parse(markerData['latitude'].toString());
@@ -383,29 +398,16 @@ class PemetaanController extends GetxController {
       updateFilteredMarkers();
 
       _logger.i('MARKER', 'Marker deleted successfully');
-
-      Get.snackbar(
-        'Berhasil',
-        'Marker berhasil dihapus',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      _showSnackbar('Marker berhasil dihapus', TSnackbarType.success);
     } catch (e) {
       _logger.e('MARKER', 'Error deleting marker', error: e);
-      Get.snackbar(
-        'Error',
-        'Gagal menghapus marker: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      _showSnackbar('Gagal menghapus marker', TSnackbarType.error);
     }
   }
 
-  // Enhanced road drawing with pointer
+  // ---------------------------------------------------------------------------
+  // ROAD DRAWING
+  // ---------------------------------------------------------------------------
   void startDrawingRoad(RoadCondition condition) {
     selectedRoadCondition.value = condition;
     isDrawingRoad.value = true;
@@ -413,15 +415,28 @@ class PemetaanController extends GetxController {
     updateTempPolyline();
   }
 
+  /// Cek apakah ada titik di tempRoadPoints yang di luar polygon desa
+  bool get hasPointOutsidePolygon {
+    if (desaPolygon.isEmpty) return false;
+    return tempRoadPoints.any((point) => !isInsidePolygon(point));
+  }
+
   Future<void> addRoadPointWithRoute(LatLng point) async {
+    // Validasi polygon — tolak titik kalau di luar desa
+    if (desaPolygon.isNotEmpty && !isInsidePolygon(point)) {
+      _showSnackbar(
+        'Titik harus berada di dalam wilayah Desa Sumberkerto',
+        TSnackbarType.warning,
+      );
+      return;
+    }
+
     if (tempRoadPoints.isEmpty) {
-      // First point - just add it
       tempRoadPoints.add(point);
       updateTempPolyline();
       return;
     }
 
-    // Get route from last point to new point
     try {
       isLoadingRoute.value = true;
       final lastPoint = tempRoadPoints.last;
@@ -429,17 +444,14 @@ class PemetaanController extends GetxController {
       final routePoints = await _directionsService.getRoute(lastPoint, point);
 
       if (routePoints.isNotEmpty) {
-        // Remove the first point as it's duplicate of last point
         tempRoadPoints.addAll(routePoints.skip(1));
       } else {
-        // Fallback to straight line if route fails
         tempRoadPoints.add(point);
       }
 
       updateTempPolyline();
     } catch (e) {
       _logger.e('ROAD', 'Error getting route', error: e);
-      // Fallback to straight line
       tempRoadPoints.add(point);
       updateTempPolyline();
     } finally {
@@ -480,50 +492,41 @@ class PemetaanController extends GetxController {
       }
 
       _logger.i('ROAD', 'Road deleted: $roadId');
-
-      Get.snackbar(
-        'Berhasil',
-        'Jalan berhasil dihapus',
-        backgroundColor: const Color(0xFF10B981),
-        colorText: Colors.white,
-      );
+      _showSnackbar('Jalan berhasil dihapus', TSnackbarType.success);
     } catch (e) {
       _logger.e('ROAD', 'Error deleting road', error: e);
-      Get.snackbar(
-        'Error',
-        'Gagal menghapus jalan: $e',
-        backgroundColor: const Color(0xFFEF4444),
-        colorText: Colors.white,
-      );
+      _showSnackbar('Gagal menghapus jalan', TSnackbarType.error);
     }
   }
 
   Future<void> saveJalanRusak(String nama, String deskripsi) async {
     if (tempRoadPoints.length < 2) {
-      Get.snackbar(
-        'Peringatan',
-        'Minimal 2 titik diperlukan',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
+      _showSnackbar('Minimal 2 titik diperlukan', TSnackbarType.warning);
       return;
     }
 
     if (selectedRoadCondition.value == null) {
-      Get.snackbar(
-        'Peringatan',
+      _showSnackbar(
         'Pilih kondisi jalan terlebih dahulu',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
+        TSnackbarType.warning,
+      );
+      return;
+    }
+
+    if (hasPointOutsidePolygon) {
+      _showSnackbar(
+        'Semua titik harus berada di dalam wilayah Desa Sumberkerto',
+        TSnackbarType.warning,
       );
       return;
     }
 
     try {
-      final id = DateTime.now().millisecondsSinceEpoch.toString();
       final condition = selectedRoadCondition.value!;
+      final id = DateTime.now().millisecondsSinceEpoch.toString();
 
       final jalanData = {
+        'id': id,
         'nama': nama,
         'deskripsi': deskripsi,
         'points': tempRoadPoints
@@ -552,21 +555,10 @@ class PemetaanController extends GetxController {
       selectedRoadCondition.value = null;
 
       _logger.i('ROAD', 'Road saved successfully: $id');
-
-      Get.snackbar(
-        'Berhasil',
-        'Jalan berhasil ditambahkan',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      _showSnackbar('Jalan berhasil ditambahkan', TSnackbarType.success);
     } catch (e) {
       _logger.e('ROAD', 'Error saving road', error: e);
-      Get.snackbar(
-        'Error',
-        'Gagal menyimpan jalan: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _showSnackbar('Gagal menyimpan jalan', TSnackbarType.error);
     }
   }
 
@@ -577,6 +569,9 @@ class PemetaanController extends GetxController {
     polylines.removeWhere((p) => p.polylineId.value == 'temp_road');
   }
 
+  // ---------------------------------------------------------------------------
+  // LOAD JALAN RUSAK (legacy polylines)
+  // ---------------------------------------------------------------------------
   Future<void> loadJalanRusakFromFirebase() async {
     try {
       final snapshot = await _database.child('maps/jalan_rusak').get();
@@ -637,12 +632,7 @@ class PemetaanController extends GetxController {
               Get.back();
               await _database.child('maps/jalan_rusak/$id').remove();
               polylines.removeWhere((p) => p.polylineId.value == id);
-              Get.snackbar(
-                'Berhasil',
-                'Jalan berhasil dihapus',
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
-              );
+              _showSnackbar('Jalan berhasil dihapus', TSnackbarType.success);
             },
             child: const Text('Hapus'),
           ),
@@ -652,6 +642,9 @@ class PemetaanController extends GetxController {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // UPLOAD IMAGES
+  // ---------------------------------------------------------------------------
   Future<List<String>> uploadImages(List<File> images) async {
     List<String> uploadedUrls = [];
 
@@ -673,19 +666,15 @@ class PemetaanController extends GetxController {
       _logger.i('UPLOAD', 'All images uploaded successfully');
     } catch (e) {
       _logger.e('UPLOAD', 'Error uploading images', error: e);
-      Get.snackbar(
-        'Error',
-        'Gagal upload foto: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
+      _showSnackbar('Gagal upload foto', TSnackbarType.error);
     }
 
     return uploadedUrls;
   }
 
+  // ---------------------------------------------------------------------------
+  // ADD MARKER
+  // ---------------------------------------------------------------------------
   Future<void> addMarkerWithIcon(
     LatLng position,
     String nama,
@@ -693,34 +682,18 @@ class PemetaanController extends GetxController {
     String iconType,
     List<File> photos,
   ) async {
-    // Validasi input
     if (nama.trim().isEmpty) {
       _logger.w('VALIDATION', 'Nama lokasi kosong');
-      Get.snackbar(
-        'Peringatan',
-        'Nama lokasi harus diisi',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      _showSnackbar('Nama lokasi harus diisi', TSnackbarType.warning);
       return;
     }
 
     if (iconType.isEmpty) {
       _logger.w('VALIDATION', 'Icon type tidak dipilih');
-      Get.snackbar(
-        'Peringatan',
-        'Pilih icon marker terlebih dahulu',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      _showSnackbar('Pilih icon marker terlebih dahulu', TSnackbarType.warning);
       return;
     }
 
-    // Check if icon_type starts with "jalan" - if yes, skip polygon validation
     final isJalanIcon = iconType.toLowerCase().startsWith('jalan');
 
     if (isJalanIcon) {
@@ -729,7 +702,6 @@ class PemetaanController extends GetxController {
         'Jalan icon detected, skipping polygon validation',
       );
     } else {
-      // Regular validation for non-jalan icons
       if (desaPolygon.isEmpty) {
         _logger.w(
           'VALIDATION',
@@ -737,13 +709,9 @@ class PemetaanController extends GetxController {
         );
       } else if (!isInsidePolygon(position)) {
         _logger.w('VALIDATION', 'Posisi di luar polygon');
-        Get.snackbar(
-          'Di luar wilayah',
+        _showSnackbar(
           'Marker hanya boleh di dalam Desa Sumberkerto',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 3),
+          TSnackbarType.warning,
         );
         return;
       }
@@ -815,7 +783,6 @@ class PemetaanController extends GetxController {
 
       _logger.d('MARKER', 'Saving marker to Firebase');
 
-      // Save to Firebase
       await _database.child('maps/data_rumah/$markerKey').set(markerData);
 
       _logger.i('MARKER', 'Marker saved to Firebase successfully');
@@ -823,7 +790,7 @@ class PemetaanController extends GetxController {
       // Update local data
       markerDataMap[markerKey] = markerData;
 
-      // Get custom icon for new marker
+      // Get custom icon
       final iconUrl = iconMap[iconType] ?? '';
       BitmapDescriptor markerIcon = BitmapDescriptor.defaultMarker;
       if (iconUrl.isNotEmpty) {
@@ -843,12 +810,12 @@ class PemetaanController extends GetxController {
 
       _logger.d('MARKER', 'Marker added to local state');
 
-      // Animate to new marker
       if (mapController != null) {
         mapController!.animateCamera(CameraUpdate.newLatLngZoom(position, 17));
       }
 
       _logger.i('MARKER', 'Marker added successfully');
+      _showSnackbar('Marker berhasil ditambahkan', TSnackbarType.success);
     } catch (e, stackTrace) {
       _logger.e(
         'MARKER',
@@ -856,18 +823,13 @@ class PemetaanController extends GetxController {
         error: e,
         stackTrace: stackTrace,
       );
-
-      Get.snackbar(
-        'Error',
-        'Gagal menyimpan marker: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
-      );
+      _showSnackbar('Gagal menyimpan marker', TSnackbarType.error);
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // BOUNDARY
+  // ---------------------------------------------------------------------------
   Future<void> loadBoundaryFromGoogleAPI() async {
     isLoading.value = true;
     try {
@@ -1042,6 +1004,9 @@ out geom;
     _logger.i('BOUNDARY', 'Loaded manual boundary');
   }
 
+  // ---------------------------------------------------------------------------
+  // UTILITY
+  // ---------------------------------------------------------------------------
   Future<String> getAddressFromLatLng(double lat, double lng) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:sumberkerto_smart_village/app/utils/snackbar_utils.dart';
 import '../../../../routes/app_pages.dart';
 
@@ -13,9 +15,92 @@ class LoginController extends GetxController {
   final isLoading = false.obs;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _userRef = FirebaseDatabase.instance.ref().child(
-    'users',
-  );
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final LocalAuthentication _localAuth = LocalAuthentication();
+
+  // Biometric states
+  final canUseBiometric = false.obs;
+  final lastLoggedInEmail = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _checkBiometricForLastUser();
+  }
+
+  /// Cek apakah user terakhir punya biometrik aktif
+  Future<void> _checkBiometricForLastUser() async {
+    try {
+      final lastEmail = await _getLastLoggedInEmail();
+      if (lastEmail.isEmpty) return;
+
+      final uid = await _getUidFromEmail(lastEmail);
+      if (uid == null) return;
+
+      final snap = await _database
+          .child('profile')
+          .child(uid)
+          .child('biometricEnabled')
+          .get();
+
+      if (snap.exists && snap.value == true) {
+        final canCheck = await _localAuth.canCheckBiometrics;
+        final supported = await _localAuth.isDeviceSupported();
+
+        if (canCheck && supported) {
+          canUseBiometric.value = true;
+          lastLoggedInEmail.value = lastEmail;
+          emailController.text = lastEmail;
+        }
+      }
+    } catch (e) {
+      print('Error checking biometric: $e');
+    }
+  }
+
+  /// Login dengan biometrik
+  Future<void> loginWithBiometric(BuildContext context) async {
+    try {
+      isLoading.value = true;
+
+      final authenticated = await _localAuth.authenticate(
+        localizedReason: 'Gunakan biometrik untuk masuk',
+      );
+
+      if (!authenticated) {
+        context.showWarningSnackBar('Autentikasi biometrik dibatalkan');
+        return;
+      }
+
+      // Ambil kredensial dari secure storage
+      final storedPassword = await _getStoredPassword(lastLoggedInEmail.value);
+      if (storedPassword == null) {
+        context.showErrorSnackBar('Data login tidak ditemukan');
+        canUseBiometric.value = false;
+        return;
+      }
+
+      // Login otomatis
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: lastLoggedInEmail.value,
+        password: storedPassword,
+      );
+
+      final user = userCredential.user;
+      if (user == null) {
+        context.showErrorSnackBar('User tidak ditemukan');
+        return;
+      }
+
+      context.showSuccessSnackBar('Berhasil masuk dengan biometrik');
+      Get.offAllNamed(Routes.MAIN);
+    } catch (e) {
+      context.showErrorSnackBar('Login biometrik gagal: ${e.toString()}');
+      canUseBiometric.value = false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   void togglePassword() {
     isPasswordHidden.value = !isPasswordHidden.value;
@@ -51,20 +136,21 @@ class LoginController extends GetxController {
         return;
       }
 
-      final snapshot = await _userRef.child(user.uid).get();
+      final snapshot = await _database.child('users').child(user.uid).get();
 
       if (!snapshot.exists) {
         context.showErrorSnackBar('Data user tidak ditemukan di database');
         return;
       }
 
-      final Map<String, dynamic> userData = Map<String, dynamic>.from(
-        snapshot.value as Map,
+      // Simpan kredensial untuk biometrik
+      await _saveLoginCredentials(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+        user.uid,
       );
 
       context.showSuccessSnackBar('Berhasil masuk');
-
-      // Masuk ke root tab (Home, History, Profile)
       Get.offAllNamed(Routes.MAIN);
     } on FirebaseAuthException catch (e) {
       context.showErrorSnackBar(e.message ?? 'Login gagal');
@@ -73,6 +159,35 @@ class LoginController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // ===== HELPER METHODS =====
+
+  Future<void> _saveLoginCredentials(
+    String email,
+    String password,
+    String uid,
+  ) async {
+    // Gunakan flutter_secure_storage untuk simpan password
+    final storage = FlutterSecureStorage();
+    await storage.write(key: 'last_email', value: email);
+    await storage.write(key: 'pwd_$email', value: password);
+    await storage.write(key: 'uid_$email', value: uid);
+  }
+
+  Future<String> _getLastLoggedInEmail() async {
+    final storage = FlutterSecureStorage();
+    return await storage.read(key: 'last_email') ?? '';
+  }
+
+  Future<String?> _getStoredPassword(String email) async {
+    final storage = FlutterSecureStorage();
+    return await storage.read(key: 'pwd_$email');
+  }
+
+  Future<String?> _getUidFromEmail(String email) async {
+    final storage = FlutterSecureStorage();
+    return await storage.read(key: 'uid_$email');
   }
 
   @override

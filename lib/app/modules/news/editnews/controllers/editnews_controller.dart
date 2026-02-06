@@ -21,7 +21,7 @@ class EditnewsController extends GetxController {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final locationController = TextEditingController();
-  final tagController = TextEditingController();
+  final categoryController = TextEditingController();
 
   // Media files
   final bannerImage = Rxn<File>();
@@ -29,24 +29,11 @@ class EditnewsController extends GetxController {
   final videoFile = Rxn<File>();
   final videoThumbnail = Rxn<File>();
 
-  // Selected tags
-  final selectedTags = <String>[].obs;
+  // Selected category
+  final selectedCategory = ''.obs;
 
-  // Available tags - Auto-generated
-  final availableTags = <String>[
-    'Breaking News',
-    'Desa',
-    'Pembangunan',
-    'Kesehatan',
-    'Pendidikan',
-    'Ekonomi',
-    'UMKM',
-    'Pertanian',
-    'Sosial',
-    'Budaya',
-    'Lingkungan',
-    'Teknologi',
-  ].obs;
+  // Available categories - Top 5 from database
+  final availableCategories = <String>[].obs;
 
   // Location suggestions
   final locationSuggestions = <String>[].obs;
@@ -82,6 +69,9 @@ class EditnewsController extends GetxController {
     // Location search listener
     locationController.addListener(_onLocationChanged);
 
+    // Fetch available categories
+    fetchCategories();
+
     // Check if editing existing news
     if (Get.arguments != null && Get.arguments is NewsModel) {
       editingNews = Get.arguments as NewsModel;
@@ -95,7 +85,7 @@ class EditnewsController extends GetxController {
     titleController.dispose();
     descriptionController.dispose();
     locationController.dispose();
-    tagController.dispose();
+    categoryController.dispose();
     MediaCompressionService.cleanupTemporary();
     super.onClose();
   }
@@ -106,7 +96,6 @@ class EditnewsController extends GetxController {
   }
 
   String get _currentUserName {
-    // FIX: Get proper username, fallback to "Anonymous" only if nothing exists
     final userId = _storage2.read('userId');
     final userName =
         _storage2.read('userName') ??
@@ -134,6 +123,37 @@ class EditnewsController extends GetxController {
     }
   }
 
+  /// Fetch top 5 categories from database
+  Future<void> fetchCategories() async {
+    try {
+      final snapshot = await _database.child('news').get();
+
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final Map<String, int> categoryCount = {};
+
+        // Count category occurrences
+        data.forEach((key, value) {
+          if (value is Map && value['category'] != null) {
+            final category = value['category'] as String;
+            categoryCount[category] = (categoryCount[category] ?? 0) + 1;
+          }
+        });
+
+        // Sort by count and take top 5
+        final sortedCategories = categoryCount.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+        availableCategories.value = sortedCategories
+            .take(5)
+            .map((e) => e.key)
+            .toList();
+      }
+    } catch (e) {
+      print('Error fetching categories: $e');
+    }
+  }
+
   /// Load data for editing
   void _loadEditData() {
     if (editingNews == null) return;
@@ -141,7 +161,11 @@ class EditnewsController extends GetxController {
     titleController.text = editingNews!.title;
     descriptionController.text = editingNews!.description;
     locationController.text = editingNews!.location ?? '';
-    selectedTags.value = List.from(editingNews!.tags);
+
+    if (editingNews!.tags.isNotEmpty) {
+      selectedCategory.value = editingNews!.tags.first;
+      categoryController.text = editingNews!.tags.first;
+    }
   }
 
   /// Location search
@@ -175,43 +199,18 @@ class EditnewsController extends GetxController {
     locationSuggestions.clear();
   }
 
-  /// Add custom tag
-  void addCustomTag() {
-    final tag = tagController.text.trim();
+  /// Select category
+  void selectCategory(String category) {
+    selectedCategory.value = category;
+    categoryController.text = category;
+  }
 
-    if (tag.isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Please enter a tag name',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      return;
+  /// Set category from manual input
+  void setManualCategory() {
+    final category = categoryController.text.trim();
+    if (category.isNotEmpty) {
+      selectedCategory.value = category;
     }
-
-    if (availableTags.contains(tag)) {
-      Get.snackbar(
-        'Info',
-        'Tag already exists',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
-      return;
-    }
-
-    availableTags.add(tag);
-    selectedTags.add(tag);
-    tagController.clear();
-
-    Get.snackbar(
-      'Success',
-      'Tag "$tag" added',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-    );
   }
 
   /// Pick banner image
@@ -232,11 +231,12 @@ class EditnewsController extends GetxController {
         if (compressed != null) {
           bannerImage.value = compressed;
           Get.snackbar(
-            'Success',
-            'Banner image selected',
+            'Berhasil',
+            'Banner berhasil dipilih',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,
+            duration: const Duration(seconds: 2),
           );
         }
         isCompressing.value = false;
@@ -245,7 +245,7 @@ class EditnewsController extends GetxController {
       isCompressing.value = false;
       Get.snackbar(
         'Error',
-        'Failed to pick image: $e',
+        'Gagal memilih gambar',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -258,8 +258,8 @@ class EditnewsController extends GetxController {
     try {
       if (images.length >= 2) {
         Get.snackbar(
-          'Limit Reached',
-          'Maximum 2 images allowed',
+          'Batas Maksimal',
+          'Maksimal 2 gambar',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.orange,
           colorText: Colors.white,
@@ -289,18 +289,19 @@ class EditnewsController extends GetxController {
 
         isCompressing.value = false;
         Get.snackbar(
-          'Success',
-          '${images.length} image(s) selected',
+          'Berhasil',
+          '${images.length} gambar dipilih',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,
+          duration: const Duration(seconds: 2),
         );
       }
     } catch (e) {
       isCompressing.value = false;
       Get.snackbar(
         'Error',
-        'Failed to pick images: $e',
+        'Gagal memilih gambar',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -331,8 +332,8 @@ class EditnewsController extends GetxController {
       if (video != null) {
         isCompressing.value = true;
         Get.snackbar(
-          'Compressing',
-          'Compressing video to 1MB...',
+          'Memproses',
+          'Mengompress video...',
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 3),
           backgroundColor: Colors.blue,
@@ -356,11 +357,12 @@ class EditnewsController extends GetxController {
 
           final size = await compressed.length();
           Get.snackbar(
-            'Success',
-            'Video compressed to ${(size / 1024 / 1024).toStringAsFixed(2)} MB',
+            'Berhasil',
+            'Video dikompress ke ${(size / 1024 / 1024).toStringAsFixed(2)} MB',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,
+            duration: const Duration(seconds: 2),
           );
         }
 
@@ -370,7 +372,7 @@ class EditnewsController extends GetxController {
       isCompressing.value = false;
       Get.snackbar(
         'Error',
-        'Failed to pick video: $e',
+        'Gagal memilih video',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -382,15 +384,6 @@ class EditnewsController extends GetxController {
   void removeVideo() {
     videoFile.value = null;
     videoThumbnail.value = null;
-  }
-
-  /// Toggle tag selection
-  void toggleTag(String tag) {
-    if (selectedTags.contains(tag)) {
-      selectedTags.remove(tag);
-    } else {
-      selectedTags.add(tag);
-    }
   }
 
   /// Upload file to Firebase Storage
@@ -418,7 +411,7 @@ class EditnewsController extends GetxController {
     if (titleController.text.trim().isEmpty) {
       Get.snackbar(
         'Error',
-        'Please enter a title',
+        'Judul tidak boleh kosong',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -429,7 +422,7 @@ class EditnewsController extends GetxController {
     if (descriptionController.text.trim().isEmpty) {
       Get.snackbar(
         'Error',
-        'Please enter a description',
+        'Deskripsi tidak boleh kosong',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -437,10 +430,10 @@ class EditnewsController extends GetxController {
       return false;
     }
 
-    if (selectedTags.isEmpty) {
+    if (selectedCategory.value.isEmpty) {
       Get.snackbar(
         'Error',
-        'Please select at least one tag',
+        'Kategori tidak boleh kosong',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -450,10 +443,11 @@ class EditnewsController extends GetxController {
 
     if (bannerImage.value == null &&
         videoFile.value == null &&
-        images.isEmpty) {
+        images.isEmpty &&
+        !isEditMode.value) {
       Get.snackbar(
         'Error',
-        'Please add at least one media (banner, image, or video)',
+        'Tambahkan minimal satu media',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -466,6 +460,9 @@ class EditnewsController extends GetxController {
 
   /// Submit news
   Future<void> submitNews() async {
+    // Set category from input before validation
+    setManualCategory();
+
     if (!_validateForm()) return;
 
     try {
@@ -476,7 +473,7 @@ class EditnewsController extends GetxController {
       if (userId == null) {
         Get.snackbar(
           'Error',
-          'User not authenticated',
+          'Pengguna tidak terautentikasi',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -556,7 +553,8 @@ class EditnewsController extends GetxController {
         'created_by': userName,
         'user_id': userId,
         'created_at': timestamp.millisecondsSinceEpoch,
-        'tags': selectedTags.toList(),
+        'category': selectedCategory.value, // Single category
+        'tags': [selectedCategory.value], // For backward compatibility
         'location': locationController.text.trim().isEmpty
             ? null
             : locationController.text.trim(),
@@ -571,15 +569,14 @@ class EditnewsController extends GetxController {
       // Save to Realtime Database
       await newsRef.set(newsData);
 
-      // FIX: Show success snackbar and navigate back
       isUploading.value = false;
       uploadProgress.value = 0.0;
 
       Get.snackbar(
-        'Success',
+        'Berhasil',
         isEditMode.value
-            ? 'News updated successfully!'
-            : 'News published successfully!',
+            ? 'Berita berhasil diperbarui!'
+            : 'Berita berhasil dipublikasikan!',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
@@ -597,7 +594,7 @@ class EditnewsController extends GetxController {
 
       Get.snackbar(
         'Error',
-        'Failed to submit news: $e',
+        'Gagal menyimpan berita: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
