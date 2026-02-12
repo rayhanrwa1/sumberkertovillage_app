@@ -276,18 +276,28 @@ class HomeView extends GetView<HomeController> {
         'subtitle': 'Peta sawah, lahan, dan wilayah desa',
         'image': TAssetsConst.iconPemetaan,
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
+        'route': Routes.PEMETAAN,
+      },
+      {
+        'title': 'Profil Desa',
+        'subtitle': 'Sejarah, visi-misi, dan data desa',
+        'image': TAssetsConst.iconDesa, // Ganti dengan icon yang sesuai
+        'bgColor': const Color.fromARGB(255, 255, 255, 255),
+        'route': Routes.VILLAGE_PROFILE, // Route baru
       },
       {
         'title': 'Data Penduduk',
         'subtitle': 'NIK, KK, RT/RW, status warga',
         'image': TAssetsConst.iconPenduduk,
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
+        'route': '', // Belum ada route
       },
       {
         'title': 'Data Pertanian',
         'subtitle': 'Luas sawah, panen padi, pupuk',
         'image': TAssetsConst.iconPertanian,
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
+        'route': '', // Belum ada route
       },
     ];
 
@@ -304,6 +314,7 @@ class HomeView extends GetView<HomeController> {
           subtitle: service['subtitle'] as String,
           imagePath: service['image'] as String,
           bgColor: service['bgColor'] as Color,
+          route: service['route'] as String,
         );
       },
     );
@@ -314,6 +325,7 @@ class HomeView extends GetView<HomeController> {
     required String subtitle,
     required String imagePath,
     required Color bgColor,
+    required String route,
   }) {
     return Obx(() {
       final isEnabled = controller.isProfileComplete.value;
@@ -334,11 +346,9 @@ class HomeView extends GetView<HomeController> {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: isEnabled
+            onTap: isEnabled && route.isNotEmpty
                 ? () {
-                    if (title == 'Pemetaan Wilayah') {
-                      Get.toNamed(Routes.PEMETAAN);
-                    }
+                    Get.toNamed(route);
                   }
                 : null,
             child: Opacity(

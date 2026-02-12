@@ -1,4 +1,8 @@
 import 'package:get/get.dart';
+import 'package:sumberkerto_smart_village/app/modules/modules/village_profile/views/Manage_kepala_desa_history.dart';
+import 'package:sumberkerto_smart_village/app/modules/modules/village_profile/views/Manage_timeline_sejarah_view.dart';
+import 'package:sumberkerto_smart_village/app/modules/modules/village_profile/views/manage_organize.dart';
+import 'package:sumberkerto_smart_village/app/modules/modules/village_profile/views/village_data_manage.dart';
 
 import '../modules/auth/login/bindings/login_binding.dart';
 import '../modules/auth/login/views/login_view.dart';
@@ -8,8 +12,6 @@ import '../modules/auth/register/bindings/register_binding.dart';
 import '../modules/auth/register/views/register_view.dart';
 import '../modules/auth/registersuccess/bindings/registersuccess_binding.dart';
 import '../modules/auth/registersuccess/views/registersuccess_view.dart';
-import '../modules/news/editnews/bindings/editnews_binding.dart';
-import '../modules/news/editnews/views/editnews_view.dart';
 import '../modules/history/bindings/history_binding.dart';
 import '../modules/history/views/history_view.dart';
 import '../modules/home/bindings/home_binding.dart';
@@ -21,6 +23,10 @@ import '../modules/modules/pemetaan/views/pemetaan_view.dart';
 import '../modules/modules/penduduk/bindings/penduduk_binding.dart';
 import '../modules/modules/penduduk/views/penduduk_view.dart';
 import '../modules/news/bindings/news_binding.dart';
+import '../modules/news/editnews/bindings/editnews_binding.dart';
+import '../modules/news/editnews/views/editnews_view.dart';
+import '../modules/news/newsview/bindings/newsview_binding.dart';
+import '../modules/news/newsview/views/newsview_view.dart';
 import '../modules/news/views/news_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
 import '../modules/profile/changepassword/bindings/changepassword_binding.dart';
@@ -30,6 +36,9 @@ import '../modules/profile/editprofile/views/editprofile_view.dart';
 import '../modules/profile/views/profile_view.dart';
 import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
+import '../modules/modules/village_profile/bindings/village_profile_binding.dart';
+import '../modules/modules/village_profile/views/village_profile_view.dart';
+import '../modules/modules/village_profile/views/village_profile_edit_view.dart';
 import '../modules/welcome/bindings/welcome_binding.dart';
 import '../modules/welcome/views/welcome_view.dart';
 
@@ -118,6 +127,41 @@ class AppPages {
       name: _Paths.EDITNEWS,
       page: () => const EditnewsView(),
       binding: EditnewsBinding(),
+    ),
+    GetPage(
+      name: _Paths.NEWSVIEW,
+      page: () => const NewsviewView(),
+      binding: NewsviewBinding(),
+    ),
+    GetPage(
+      name: _Paths.VILLAGE_PROFILE,
+      page: () => const VillageProfileView(),
+      binding: VillageProfileBinding(),
+    ),
+    GetPage(
+      name: _Paths.VILLAGE_PROFILE_EDIT,
+      page: () => const VillageProfileEditView(),
+      binding: VillageProfileBinding(),
+    ),
+    GetPage(
+      name: _Paths.VILLAGE_DATA_MANAGE,
+      page: () => const VillageDataManageView(),
+      binding: VillageProfileBinding(),
+    ),
+    GetPage(
+      name: _Paths.MANAGE_ORGANIZATION,
+      page: () => const ManageOrganizationView(),
+      binding: VillageProfileBinding(),
+    ),
+    GetPage(
+      name: _Paths.MANAGE_KEPALA_DESA_HISTORY,
+      page: () => const ManageKepalaDesaHistoryView(),
+      binding: VillageProfileBinding(),
+    ),
+    GetPage(
+      name: _Paths.MANAGE_TIMELINE_SEJARAH,
+      page: () => const ManageTimelineSejarahView(),
+      binding: VillageProfileBinding(),
     ),
   ];
 }

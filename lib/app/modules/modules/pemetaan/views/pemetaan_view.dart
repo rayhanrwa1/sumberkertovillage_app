@@ -317,7 +317,6 @@ class PemetaanView extends GetView<PemetaanController> {
             mainAxisSize: MainAxisSize.min,
             children: [
               /// Finish
-              /// Finish
               FloatingActionButton(
                 heroTag: 'finish_road',
                 backgroundColor: TColorsConst.blue500,

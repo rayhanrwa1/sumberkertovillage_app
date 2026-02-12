@@ -20,6 +20,13 @@ abstract class Routes {
   static const CHANGEPASSWORD = _Paths.CHANGEPASSWORD;
   static const NEWS = _Paths.NEWS;
   static const EDITNEWS = _Paths.EDITNEWS;
+  static const NEWSVIEW = _Paths.NEWSVIEW;
+  static const VILLAGE_PROFILE = _Paths.VILLAGE_PROFILE;
+  static const VILLAGE_PROFILE_EDIT = _Paths.VILLAGE_PROFILE_EDIT;
+  static const VILLAGE_DATA_MANAGE = _Paths.VILLAGE_DATA_MANAGE;
+  static const MANAGE_ORGANIZATION = _Paths.MANAGE_ORGANIZATION;
+  static const MANAGE_KEPALA_DESA_HISTORY = _Paths.MANAGE_KEPALA_DESA_HISTORY;
+  static const MANAGE_TIMELINE_SEJARAH = _Paths.MANAGE_TIMELINE_SEJARAH;
 }
 
 abstract class _Paths {
@@ -41,4 +48,13 @@ abstract class _Paths {
   static const CHANGEPASSWORD = '/changepassword';
   static const NEWS = '/news';
   static const EDITNEWS = '/editnews';
+  static const NEWSVIEW = '/newsview';
+  static const VILLAGE_PROFILE = '/village-profile';
+  static const VILLAGE_PROFILE_EDIT = '/village-profile/edit';
+  static const VILLAGE_DATA_MANAGE = '/village-profile/data-manage';
+  static const MANAGE_ORGANIZATION = '/village-profile/manage-organization';
+  static const MANAGE_KEPALA_DESA_HISTORY =
+      '/village-profile/manage-kepala-desa-history';
+  static const MANAGE_TIMELINE_SEJARAH =
+      '/village-profile/manage-timeline-sejarah';
 }

@@ -28,37 +28,29 @@ class LoginController extends GetxController {
     _checkBiometricForLastUser();
   }
 
-  /// Cek apakah user terakhir punya biometrik aktif
   Future<void> _checkBiometricForLastUser() async {
     try {
-      final lastEmail = await _getLastLoggedInEmail();
-      if (lastEmail.isEmpty) return;
+      final storage = FlutterSecureStorage();
 
-      final uid = await _getUidFromEmail(lastEmail);
-      if (uid == null) return;
+      final lastEmail = await storage.read(key: 'last_email');
+      final biometricEnabled = await storage.read(key: 'biometric_enabled');
 
-      final snap = await _database
-          .child('profile')
-          .child(uid)
-          .child('biometricEnabled')
-          .get();
+      if (lastEmail == null || biometricEnabled != 'true') return;
 
-      if (snap.exists && snap.value == true) {
-        final canCheck = await _localAuth.canCheckBiometrics;
-        final supported = await _localAuth.isDeviceSupported();
+      final biometrics = await _localAuth.getAvailableBiometrics();
 
-        if (canCheck && supported) {
-          canUseBiometric.value = true;
-          lastLoggedInEmail.value = lastEmail;
-          emailController.text = lastEmail;
-        }
+      print('DEBUG availableBiometrics: $biometrics');
+
+      if (biometrics.isNotEmpty) {
+        canUseBiometric.value = true;
+        lastLoggedInEmail.value = lastEmail;
+        emailController.text = lastEmail;
       }
     } catch (e) {
-      print('Error checking biometric: $e');
+      print('Biometric check error: $e');
     }
   }
 
-  /// Login dengan biometrik
   Future<void> loginWithBiometric(BuildContext context) async {
     try {
       isLoading.value = true;

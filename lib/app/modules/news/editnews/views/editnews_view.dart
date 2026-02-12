@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../controllers/editnews_controller.dart';
 
 class EditnewsView extends GetView<EditnewsController> {
@@ -42,7 +43,7 @@ class EditnewsView extends GetView<EditnewsController> {
                     ),
                   )
                 : TextButton(
-                    onPressed: controller.submitNews,
+                    onPressed: () => controller.submitNews(context),
                     child: const Text(
                       'Simpan',
                       style: TextStyle(
@@ -78,7 +79,7 @@ class EditnewsView extends GetView<EditnewsController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildMediaSection(),
+                    _buildMediaSection(context),
                     const SizedBox(height: 24),
                     _buildTitleField(),
                     const SizedBox(height: 20),
@@ -87,6 +88,8 @@ class EditnewsView extends GetView<EditnewsController> {
                     _buildCategoryField(),
                     const SizedBox(height: 20),
                     _buildLocationField(),
+                    const SizedBox(height: 20),
+                    _buildAutoTagsSection(),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -95,7 +98,7 @@ class EditnewsView extends GetView<EditnewsController> {
     );
   }
 
-  Widget _buildMediaSection() {
+  Widget _buildMediaSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -110,251 +113,498 @@ class EditnewsView extends GetView<EditnewsController> {
         const SizedBox(height: 12),
 
         // Banner Image
-        _buildBannerSection(),
+        _buildBannerSection(context),
         const SizedBox(height: 12),
 
         // Images
-        _buildImagesSection(),
+        _buildImagesSection(context),
         const SizedBox(height: 12),
 
         // Video
-        _buildVideoSection(),
+        _buildVideoSection(context),
       ],
     );
   }
 
-  Widget _buildBannerSection() {
-    return Obx(
-      () => controller.bannerImage.value != null
-          ? Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    controller.bannerImage.value!,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: controller.removeBanner,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'Banner',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF2C3E50),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : _buildAddMediaButton(
-              'Tambah Banner',
-              Icons.image_outlined,
-              controller.pickBannerImage,
+  Widget _buildBannerSection(BuildContext context) {
+    return Obx(() {
+      // Check new upload first
+      if (controller.bannerImage.value != null) {
+        return Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(
+                controller.bannerImage.value!,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
-    );
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: controller.removeBanner,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Banner Baru',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      // Check existing banner
+      if (controller.existingBannerUrl.value != null) {
+        return Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+                imageUrl: controller.existingBannerUrl.value!,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  height: 180,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF2C3E50)),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 180,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.error_outline),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: controller.removeExistingBanner,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Banner',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF2C3E50),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      // No banner - show add button
+      return _buildAddMediaButton(
+        'Tambah Banner',
+        Icons.image_outlined,
+        () => controller.pickBannerImage(context),
+      );
+    });
   }
 
-  Widget _buildImagesSection() {
-    return Obx(
-      () => controller.images.isEmpty
-          ? _buildAddMediaButton(
-              'Tambah Gambar (Maks 2)',
-              Icons.photo_library_outlined,
-              controller.pickImages,
-            )
-          : Column(
-              children: [
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: controller.images.length,
-                  itemBuilder: (context, index) {
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            controller.images[index],
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: () => controller.removeImage(index),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                if (controller.images.length < 2) ...[
-                  const SizedBox(height: 12),
-                  _buildAddMediaButton(
-                    'Tambah Gambar Lagi',
-                    Icons.add_photo_alternate_outlined,
-                    controller.pickImages,
-                  ),
-                ],
-              ],
-            ),
-    );
-  }
+  Widget _buildImagesSection(BuildContext context) {
+    return Obx(() {
+      final hasExistingImages = controller.existingImageUrls.isNotEmpty;
+      final hasNewImages = controller.images.isNotEmpty;
+      final totalImages =
+          controller.existingImageUrls.length + controller.images.length;
 
-  Widget _buildVideoSection() {
-    return Obx(
-      () => controller.videoFile.value != null
-          ? Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: controller.videoThumbnail.value != null
-                      ? Image.file(
-                          controller.videoThumbnail.value!,
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        )
-                      : Container(
-                          height: 180,
-                          color: Colors.grey[200],
-                          child: Center(
-                            child: Icon(
-                              Icons.video_library_outlined,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                        ),
-                ),
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
+      if (!hasExistingImages && !hasNewImages) {
+        return _buildAddMediaButton(
+          'Tambah Gambar (Maks 2)',
+          Icons.photo_library_outlined,
+          () => controller.pickImages(context),
+        );
+      }
+
+      return Column(
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: totalImages,
+            itemBuilder: (context, index) {
+              // Show existing images first
+              if (index < controller.existingImageUrls.length) {
+                return Stack(
+                  children: [
+                    ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.play_circle_outline,
-                        size: 56,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: controller.removeVideo,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  child: FutureBuilder<int>(
-                    future: controller.videoFile.value!.length(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        final sizeMB = (snapshot.data! / 1024 / 1024)
-                            .toStringAsFixed(2);
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'Video ($sizeMB MB)',
-                            style: const TextStyle(
-                              fontSize: 11,
+                      child: CachedNetworkImage(
+                        imageUrl: controller.existingImageUrls[index],
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(
                               color: Color(0xFF2C3E50),
-                              fontWeight: FontWeight.w600,
+                              strokeWidth: 2,
                             ),
                           ),
-                        );
-                      }
-                      return const SizedBox();
-                    },
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.error_outline),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => controller.removeExistingImage(index),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                // Show new images
+                final newImageIndex =
+                    index - controller.existingImageUrls.length;
+                return Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        controller.images[newImageIndex],
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => controller.removeImage(newImageIndex),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Label for new images
+                    Positioned(
+                      bottom: 4,
+                      left: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Baru',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
+          if (totalImages < 2) ...[
+            const SizedBox(height: 12),
+            _buildAddMediaButton(
+              'Tambah Gambar Lagi',
+              Icons.add_photo_alternate_outlined,
+              () => controller.pickImages(context),
+            ),
+          ],
+        ],
+      );
+    });
+  }
+
+  Widget _buildVideoSection(BuildContext context) {
+    return Obx(() {
+      // Check new video upload first
+      if (controller.videoFile.value != null) {
+        return Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: controller.videoThumbnail.value != null
+                  ? Image.file(
+                      controller.videoThumbnail.value!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      height: 180,
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: Icon(
+                          Icons.video_library_outlined,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    ),
+            ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.play_circle_outline,
+                    size: 56,
+                    color: Colors.white,
                   ),
                 ),
-              ],
-            )
-          : _buildAddMediaButton(
-              'Tambah Video (Maks 1MB)',
-              Icons.videocam_outlined,
-              controller.pickVideo,
+              ),
             ),
-    );
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: controller.removeVideo,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: FutureBuilder<int>(
+                future: controller.videoFile.value!.length(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final sizeMB = (snapshot.data! / 1024 / 1024)
+                        .toStringAsFixed(2);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Video Baru ($sizeMB MB)',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ],
+        );
+      }
+
+      // Check existing video
+      if (controller.existingVideoUrl.value != null) {
+        return Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: controller.existingVideoThumbnailUrl.value != null
+                  ? CachedNetworkImage(
+                      imageUrl: controller.existingVideoThumbnailUrl.value!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        height: 180,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF2C3E50),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: 180,
+                        color: Colors.grey[200],
+                        child: Icon(
+                          Icons.video_library_outlined,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    )
+                  : Container(
+                      height: 180,
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: Icon(
+                          Icons.video_library_outlined,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    ),
+            ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.play_circle_outline,
+                    size: 56,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: controller.removeExistingVideo,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Video',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF2C3E50),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      // No video - show add button
+      return _buildAddMediaButton(
+        'Tambah Video (Maks 1MB)',
+        Icons.videocam_outlined,
+        () => controller.pickVideo(context),
+      );
+    });
   }
 
   Widget _buildAddMediaButton(String label, IconData icon, VoidCallback onTap) {
@@ -418,6 +668,7 @@ class EditnewsView extends GetView<EditnewsController> {
               contentPadding: const EdgeInsets.all(16),
             ),
             maxLines: 2,
+            onChanged: (_) => controller.generateAutoTags(),
           ),
         ),
       ],
@@ -453,6 +704,7 @@ class EditnewsView extends GetView<EditnewsController> {
               contentPadding: const EdgeInsets.all(16),
             ),
             maxLines: 6,
+            onChanged: (_) => controller.generateAutoTags(),
           ),
         ),
       ],
@@ -460,42 +712,83 @@ class EditnewsView extends GetView<EditnewsController> {
   }
 
   Widget _buildCategoryField() {
-    return Column(
+    return // Di view Anda, tambahkan Stack untuk menampilkan suggestions
+    Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Kategori',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: TextField(
-            controller: controller.categoryController,
-            style: const TextStyle(color: Color(0xFF2C3E50), fontSize: 15),
-            decoration: InputDecoration(
-              hintText: 'Masukkan kategori...',
-              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-              prefixIcon: const Icon(
-                Icons.category_outlined,
-                color: Color(0xFF2C3E50),
-                size: 20,
+        SizedBox(height: 8),
+        Stack(
+          children: [
+            // TextField Kategori
+            TextField(
+              controller: controller.categoryController,
+              decoration: InputDecoration(
+                hintText: 'Masukkan kategori...',
+                prefixIcon: Icon(Icons.category_outlined),
+                suffixIcon: controller.categoryController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          controller.categoryController.clear();
+                          controller.showCategorySuggestions.value = false;
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(16),
+              onChanged: (value) {
+                // Trigger akan otomatis dari listener di controller
+              },
             ),
-            onChanged: (value) {
-              controller.selectedCategory.value = value.trim();
-            },
-          ),
+
+            // Suggestions dropdown
+            Obx(() {
+              if (!controller.showCategorySuggestions.value ||
+                  controller.categorySuggestions.isEmpty) {
+                return SizedBox.shrink();
+              }
+
+              return Positioned(
+                top: 60, // Sesuaikan dengan tinggi TextField
+                left: 0,
+                right: 0,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    constraints: BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: controller.categorySuggestions.length,
+                      itemBuilder: (context, index) {
+                        final suggestion =
+                            controller.categorySuggestions[index];
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(Icons.tag, size: 20),
+                          title: Text(suggestion),
+                          onTap: () {
+                            controller.selectCategorySuggestion(suggestion);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
         ),
 
         // Show available categories if any
@@ -566,95 +859,189 @@ class EditnewsView extends GetView<EditnewsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Lokasi (Opsional)',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
-          ),
+        Text(
+          'Lokasi',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Stack(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: TextField(
-                controller: controller.locationController,
-                style: const TextStyle(color: Color(0xFF2C3E50), fontSize: 15),
-                decoration: InputDecoration(
-                  hintText: 'Cari lokasi...',
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-                  prefixIcon: const Icon(
-                    Icons.location_on_outlined,
-                    color: Color(0xFF2C3E50),
-                    size: 20,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.clear, color: Colors.grey[400], size: 20),
-                    onPressed: () {
-                      controller.locationController.clear();
-                      controller.showLocationSuggestions.value = false;
-                    },
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(16),
+            // TextField Lokasi
+            TextField(
+              controller: controller.locationController,
+              decoration: InputDecoration(
+                hintText: 'Pilih lokasi...',
+                prefixIcon: Icon(Icons.location_on_outlined),
+                suffixIcon: controller.locationController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          controller.locationController.clear();
+                          controller.showLocationSuggestions.value = false;
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
-            Obx(
-              () =>
-                  controller.showLocationSuggestions.value &&
-                      controller.locationSuggestions.isNotEmpty
-                  ? Positioned(
-                      top: 60,
-                      left: 0,
-                      right: 0,
-                      child: Material(
-                        elevation: 4,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: controller.locationSuggestions.length,
-                            itemBuilder: (context, index) {
-                              final location =
-                                  controller.locationSuggestions[index];
-                              return ListTile(
-                                leading: const Icon(
-                                  Icons.location_on,
-                                  color: Color(0xFF2C3E50),
-                                  size: 20,
-                                ),
-                                title: Text(
-                                  location,
-                                  style: const TextStyle(
-                                    color: Color(0xFF2C3E50),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                onTap: () =>
-                                    controller.selectLocation(location),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    )
-                  : const SizedBox(),
-            ),
+
+            // Suggestions dropdown
+            Obx(() {
+              if (!controller.showLocationSuggestions.value ||
+                  controller.locationSuggestions.isEmpty) {
+                return SizedBox.shrink();
+              }
+
+              return Positioned(
+                top: 60,
+                left: 0,
+                right: 0,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    constraints: BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: controller.locationSuggestions.length,
+                      itemBuilder: (context, index) {
+                        final suggestion =
+                            controller.locationSuggestions[index];
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(Icons.place, size: 20),
+                          title: Text(suggestion),
+                          onTap: () {
+                            controller.selectLocation(suggestion);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            }),
           ],
+        ),
+        SizedBox(height: 4),
+        Text(
+          '💡 Tip: Ketik nama kota untuk melihat saran lokasi',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+            fontStyle: FontStyle.italic,
+          ),
         ),
       ],
     );
+  }
+
+  Widget _buildAutoTagsSection() {
+    return Obx(() {
+      if (controller.autoGeneratedTags.isEmpty) {
+        return const SizedBox();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'Tag Otomatis',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2C3E50),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.blue),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome,
+                      size: 12,
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'AI Generated',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: controller.autoGeneratedTags.map((tag) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2C3E50),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      tag,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () => controller.removeTag(tag),
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '💡 Tag dibuat otomatis dari judul dan deskripsi',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    });
   }
 }

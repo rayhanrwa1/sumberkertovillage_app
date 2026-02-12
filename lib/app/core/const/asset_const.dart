@@ -8,6 +8,7 @@ class TAssetsConst {
   static const String iconPemetaan = 'assets/images/icon_pemetaan.png';
   static const String iconPenduduk = 'assets/images/icon_penduduk.png';
   static const String iconPertanian = 'assets/images/icon_pertanian.png';
+  static const String iconDesa = 'assets/images/village.png';
 
   // TODO : Lottie Assets
   static const String success = 'assets/lottie/success.json';

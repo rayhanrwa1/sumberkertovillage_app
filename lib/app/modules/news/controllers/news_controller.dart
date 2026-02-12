@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -6,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sumberkerto_smart_village/app/data/services/media_compression_service.dart';
+import 'package:sumberkerto_smart_village/app/utils/snackbar_utils.dart';
 import '../../../data/models/news_model.dart';
 
 class NewsController extends GetxController {
@@ -26,8 +28,7 @@ class NewsController extends GetxController {
   final isLoadingMore = false.obs;
 
   // Filter options
-  final selectedCategory =
-      ''.obs; // Changed from selectedTags to single category
+  final selectedCategory = ''.obs;
   final searchQuery = ''.obs;
 
   // Available categories - Top 5 from database
@@ -42,6 +43,7 @@ class NewsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    print('NewsController onInit');
     fetchCategories();
     fetchNews();
 
@@ -64,6 +66,7 @@ class NewsController extends GetxController {
   /// Fetch top 5 categories from database
   Future<void> fetchCategories() async {
     try {
+      print('Fetching categories...');
       final snapshot = await _database.child('news').get();
 
       if (snapshot.exists) {
@@ -86,6 +89,10 @@ class NewsController extends GetxController {
             .take(5)
             .map((e) => e.key)
             .toList();
+
+        print('Categories loaded: ${availableCategories.length}');
+      } else {
+        print('No news data found in database');
       }
     } catch (e) {
       print('Error fetching categories: $e');
@@ -93,80 +100,86 @@ class NewsController extends GetxController {
   }
 
   /// Fetch news from Firebase Realtime Database
-  Future<void> fetchNews({bool refresh = false}) async {
+  Future<void> fetchNews({bool refresh = false, BuildContext? context}) async {
     if (refresh) {
       _currentPage = 0;
       _lastKey = null;
       hasMore.value = true;
       newsList.clear();
+      print('Refreshing news list...');
     }
 
-    if (!hasMore.value || isLoading.value) return;
+    if (!hasMore.value || isLoading.value) {
+      print(
+        'Skipping fetch: hasMore=${hasMore.value}, isLoading=${isLoading.value}',
+      );
+      return;
+    }
 
     try {
       isLoading.value = true;
+      print('Fetching news from Firebase...');
 
-      Query query = _database.child('news').orderByChild('created_at');
-
-      // Pagination
-      if (_lastKey != null) {
-        query = query.endBefore(_lastKey).limitToLast(_pageSize + 1);
-      } else {
-        query = query.limitToLast(_pageSize);
-      }
-
-      final snapshot = await query.get();
+      final snapshot = await _database.child('news').get();
 
       if (!snapshot.exists) {
+        print('No news found in database');
         hasMore.value = false;
+        filteredNews.value = [];
       } else {
         final data = snapshot.value as Map<dynamic, dynamic>;
-        final newsList2 = <NewsModel>[];
+        print('Found ${data.length} news items in database');
+
+        final newsListTemp = <NewsModel>[];
+        int successCount = 0;
+        int errorCount = 0;
 
         data.forEach((key, value) {
           if (value is Map) {
-            final news = NewsModel.fromRealtimeDB(key, value);
-            newsList2.add(news);
+            try {
+              final news = NewsModel.fromRealtimeDB(key, value);
+              newsListTemp.add(news);
+              successCount++;
+            } catch (e) {
+              print('Error parsing news $key: $e');
+              print('News data: $value');
+              errorCount++;
+            }
           }
         });
 
+        print('Successfully parsed: $successCount, Errors: $errorCount');
+
         // Sort by created_at descending (newest first)
-        newsList2.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        newsListTemp.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-        // Handle pagination
-        if (_lastKey != null && newsList2.isNotEmpty) {
-          newsList2.removeAt(0); // Remove duplicate from previous page
-        }
+        newsList.value = newsListTemp;
+        hasMore.value = false;
 
-        if (newsList2.length < _pageSize) {
-          hasMore.value = false;
-        }
-
-        if (newsList2.isNotEmpty) {
-          _lastKey = newsList2.last.createdAt.millisecondsSinceEpoch.toString();
-          newsList.addAll(newsList2);
-          _currentPage++;
-        }
+        print('News list updated: ${newsList.length} items');
 
         applyFilters();
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Gagal memuat berita',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      print('Error fetching news: $e');
+      print('Stack trace: ${StackTrace.current}');
+      if (context != null) {
+        context.showErrorSnackBar('Gagal memuat berita: ${e.toString()}');
+      }
     } finally {
       isLoading.value = false;
+      print('Fetch news completed. Loading: ${isLoading.value}');
     }
   }
 
   /// Apply filters to news list
   void applyFilters() {
+    print('Applying filters - Total news: ${newsList.length}');
     var filtered = newsList.toList();
 
     // Apply category filter
     if (selectedCategory.value.isNotEmpty) {
+      print('Filtering by category: ${selectedCategory.value}');
       filtered = filtered.where((news) {
         return news.tags.contains(selectedCategory.value);
       }).toList();
@@ -174,6 +187,7 @@ class NewsController extends GetxController {
 
     // Apply search filter
     if (searchQuery.value.isNotEmpty) {
+      print('Filtering by search: ${searchQuery.value}');
       final query = searchQuery.value.toLowerCase();
       filtered = filtered.where((news) {
         return news.title.toLowerCase().contains(query) ||
@@ -182,6 +196,7 @@ class NewsController extends GetxController {
     }
 
     filteredNews.value = filtered;
+    print('Filtered news count: ${filteredNews.length}');
   }
 
   /// Select category filter
@@ -222,12 +237,16 @@ class NewsController extends GetxController {
     }
   }
 
+  void editNews(NewsModel news) {
+    Get.toNamed('/editnews', arguments: news);
+  }
+
   /// Toggle like
-  Future<void> toggleLike(String newsId) async {
+  Future<void> toggleLike(String newsId, BuildContext context) async {
     try {
       final userId = _currentUserId;
       if (userId == null) {
-        Get.snackbar('Error', 'Silakan login terlebih dahulu');
+        context.showErrorSnackBar('Silakan login terlebih dahulu');
         return;
       }
 
@@ -262,11 +281,7 @@ class NewsController extends GetxController {
         applyFilters();
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Gagal memperbarui like',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      context.showErrorSnackBar('Gagal memperbarui like');
     }
   }
 
@@ -289,7 +304,8 @@ class NewsController extends GetxController {
   /// Navigate to news detail
   void openNewsDetail(NewsModel news) {
     incrementViewCount(news.id);
-    Get.toNamed('/news-detail', arguments: news);
+    // Ubah dari /news-detail ke /newsview
+    Get.toNamed('/newsview', arguments: news);
   }
 
   /// Navigate to create news
@@ -298,8 +314,120 @@ class NewsController extends GetxController {
   }
 
   /// Refresh news list
-  Future<void> refreshNews() async {
+  Future<void> refreshNews({BuildContext? context}) async {
     await fetchCategories();
-    await fetchNews(refresh: true);
+    await fetchNews(refresh: true, context: context);
+  }
+
+  /// Check if current user can delete this news
+  bool canDeleteNews(NewsModel news) {
+    final currentUserId = _currentUserId;
+    if (currentUserId == null) return false;
+
+    // User can delete if they created the news
+    return news.userId == currentUserId;
+  }
+
+  /// Delete news
+  Future<void> deleteNews(NewsModel news, BuildContext context) async {
+    try {
+      // Show loading dialog
+      Get.dialog(
+        const Center(
+          child: CircularProgressIndicator(color: Color(0xFF2C3E50)),
+        ),
+        barrierDismissible: false,
+      );
+
+      final currentUserId = _currentUserId;
+      if (currentUserId == null) {
+        Get.back(); // Close loading
+        context.showErrorSnackBar('Silakan login terlebih dahulu');
+        return;
+      }
+
+      // Verify user owns this news
+      if (news.userId != currentUserId) {
+        Get.back(); // Close loading
+        context.showErrorSnackBar(
+          'Anda tidak memiliki izin untuk menghapus berita ini',
+        );
+        return;
+      }
+
+      print('Deleting news: ${news.id}');
+
+      // Delete images from Firebase Storage if any
+      if (news.images.isNotEmpty) {
+        for (final imageUrl in news.images) {
+          try {
+            if (imageUrl.isNotEmpty && imageUrl.contains('firebase')) {
+              final ref = _storage.refFromURL(imageUrl);
+              await ref.delete();
+              print('Deleted image: $imageUrl');
+            }
+          } catch (e) {
+            print('Error deleting image $imageUrl: $e');
+            // Continue even if image deletion fails
+          }
+        }
+      }
+
+      // Delete banner image if exists
+      if (news.bannerImage != null &&
+          news.bannerImage!.isNotEmpty &&
+          news.bannerImage!.contains('firebase')) {
+        try {
+          final ref = _storage.refFromURL(news.bannerImage!);
+          await ref.delete();
+          print('Deleted banner image: ${news.bannerImage}');
+        } catch (e) {
+          print('Error deleting banner image: $e');
+          // Continue even if banner deletion fails
+        }
+      }
+
+      // Delete video thumbnail if exists
+      if (news.videoThumbnail != null &&
+          news.videoThumbnail!.isNotEmpty &&
+          news.videoThumbnail!.contains('firebase')) {
+        try {
+          final ref = _storage.refFromURL(news.videoThumbnail!);
+          await ref.delete();
+          print('Deleted video thumbnail: ${news.videoThumbnail}');
+        } catch (e) {
+          print('Error deleting video thumbnail: $e');
+          // Continue even if thumbnail deletion fails
+        }
+      }
+
+      // Delete news from Firebase Realtime Database
+      await _database.child('news/${news.id}').remove();
+      print('Deleted news from database: ${news.id}');
+
+      // Remove from local list
+      newsList.removeWhere((item) => item.id == news.id);
+
+      // Reapply filters to update UI
+      applyFilters();
+
+      // Close loading dialog
+      Get.back();
+
+      // Show success message
+      context.showSuccessSnackBar('Berita berhasil dihapus');
+
+      // Refresh categories after delete
+      await fetchCategories();
+    } catch (e) {
+      // Close loading dialog if still open
+      if (Get.isDialogOpen ?? false) Get.back();
+
+      print('Error deleting news: $e');
+      print('Stack trace: ${StackTrace.current}');
+
+      // Show error message
+      context.showErrorSnackBar('Gagal menghapus berita: ${e.toString()}');
+    }
   }
 }

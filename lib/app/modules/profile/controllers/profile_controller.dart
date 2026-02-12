@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'
+    show FlutterSecureStorage;
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -72,11 +74,14 @@ class ProfileController extends GetxController {
     final snap = await _database
         .child('profile')
         .child(user.uid)
-        .child('biometricEnabled')
+        .child('biometrik')
+        .child('enabled')
         .get();
 
     if (snap.exists) {
       isBiometricEnabled.value = snap.value as bool;
+    } else {
+      isBiometricEnabled.value = false;
     }
   }
 
@@ -136,9 +141,22 @@ class ProfileController extends GetxController {
       print('Updating database...');
 
       // Update ke database
+      // await _database.child('profile').child(user.uid).update({
+      //   'biometricEnabled': value,
+      // });
+
+      final storage = FlutterSecureStorage();
+
+      // simpan ke Firebase (opsional, untuk sinkronisasi)
       await _database.child('profile').child(user.uid).update({
         'biometricEnabled': value,
       });
+
+      // 🔥 WAJIB: simpan ke local secure storage
+      await storage.write(
+        key: 'biometric_enabled',
+        value: value.toString(), // "true" / "false"
+      );
 
       print('Database updated successfully');
 

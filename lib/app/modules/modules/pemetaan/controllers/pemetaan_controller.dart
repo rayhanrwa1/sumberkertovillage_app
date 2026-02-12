@@ -13,6 +13,7 @@ import 'package:sumberkerto_smart_village/app/utils/snackbar_utils.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'dart:math' as math;
 
 import 'package:sumberkerto_smart_village/app/modules/modules/pemetaan/services/directions_service.dart';
 import 'package:sumberkerto_smart_village/app/modules/modules/pemetaan/models/road_model.dart';
@@ -75,44 +76,142 @@ class PemetaanController extends GetxController {
     loadBoundaryFromGoogleAPI();
     loadIconMaps();
     loadMarkersFromFirebase();
-    loadJalanRusakFromFirebase();
     loadRoads();
   }
 
   // ---------------------------------------------------------------------------
-  // POLYLINES
+  // POLYLINES - Updated untuk circle points
   // ---------------------------------------------------------------------------
   Set<Polyline> get polylines {
     final Set<Polyline> allPolylines = {};
 
+    // Load existing roads as circle points
     for (final road in roads) {
-      final polyline = Polyline(
-        polylineId: PolylineId(road.id),
-        points: road.points,
-        color: road.condition.color,
-        width: 6,
-        consumeTapEvents: true,
-        onTap: () {
-          onPolylineTapped(road.id);
-        },
-      );
-      allPolylines.add(polyline);
+      // Create circles for each point
+      for (int i = 0; i < road.points.length; i++) {
+        final point = road.points[i];
+        final circlePoints = _createCirclePoints(point, 8.0);
+
+        allPolylines.add(
+          Polyline(
+            polylineId: PolylineId('${road.id}_circle_$i'),
+            points: circlePoints,
+            color: road.condition.color,
+            width: 4,
+            consumeTapEvents: true,
+            onTap: () {
+              onPolylineTapped(road.id);
+            },
+          ),
+        );
+
+        // Fill circle
+        final fillCirclePoints = _createCirclePoints(point, 6.0);
+        allPolylines.add(
+          Polyline(
+            polylineId: PolylineId('${road.id}_circle_fill_$i'),
+            points: fillCirclePoints,
+            color: road.condition.color.withOpacity(0.5),
+            width: 6,
+          ),
+        );
+      }
+
+      // Add connecting line
+      if (road.points.length >= 2) {
+        allPolylines.add(
+          Polyline(
+            polylineId: PolylineId('${road.id}_connector'),
+            points: road.points,
+            color: road.condition.color.withOpacity(0.3),
+            width: 2,
+            geodesic: true,
+            patterns: [PatternItem.dash(10), PatternItem.gap(10)],
+          ),
+        );
+      }
+
       _polylineToRoadMap[road.id] = road.id;
     }
 
-    if (isDrawingRoad.value && tempRoadPoints.length > 1) {
-      allPolylines.add(
-        Polyline(
-          polylineId: const PolylineId('temp_road'),
-          points: tempRoadPoints,
-          color: selectedRoadCondition.value?.color ?? Colors.red,
-          width: 6,
-          patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-        ),
-      );
+    // Temporary road points while drawing
+    if (isDrawingRoad.value && tempRoadPoints.isNotEmpty) {
+      // Create circles for temp points
+      for (int i = 0; i < tempRoadPoints.length; i++) {
+        final point = tempRoadPoints[i];
+        final circlePoints = _createCirclePoints(point, 8.0);
+
+        allPolylines.add(
+          Polyline(
+            polylineId: PolylineId('temp_road_circle_$i'),
+            points: circlePoints,
+            color: selectedRoadCondition.value?.color ?? Colors.red,
+            width: 4,
+            geodesic: false,
+          ),
+        );
+
+        final fillCirclePoints = _createCirclePoints(point, 6.0);
+        allPolylines.add(
+          Polyline(
+            polylineId: PolylineId('temp_road_circle_fill_$i'),
+            points: fillCirclePoints,
+            color: (selectedRoadCondition.value?.color ?? Colors.red)
+                .withOpacity(0.5),
+            width: 6,
+            geodesic: false,
+          ),
+        );
+      }
+
+      // Connecting line for temp points
+      if (tempRoadPoints.length >= 2) {
+        allPolylines.add(
+          Polyline(
+            polylineId: const PolylineId('temp_road_connector'),
+            points: tempRoadPoints,
+            color: (selectedRoadCondition.value?.color ?? Colors.red)
+                .withOpacity(0.3),
+            width: 2,
+            geodesic: true,
+            patterns: [PatternItem.dash(10), PatternItem.gap(10)],
+          ),
+        );
+      }
     }
 
     return allPolylines;
+  }
+
+  // Create circle points for a given center and radius
+  List<LatLng> _createCirclePoints(LatLng center, double radiusInMeters) {
+    const int points = 32;
+    final List<LatLng> circlePoints = [];
+
+    const double earthRadius = 6371000;
+    final double lat = center.latitude * math.pi / 180;
+    final double lng = center.longitude * math.pi / 180;
+    final double d = radiusInMeters / earthRadius;
+
+    for (int i = 0; i <= points; i++) {
+      final double bearing = (i * 360 / points) * math.pi / 180;
+
+      final double lat2 = math.asin(
+        math.sin(lat) * math.cos(d) +
+            math.cos(lat) * math.sin(d) * math.cos(bearing),
+      );
+
+      final double lng2 =
+          lng +
+          math.atan2(
+            math.sin(bearing) * math.sin(d) * math.cos(lat),
+            math.cos(d) - math.sin(lat) * math.sin(lat2),
+          );
+
+      circlePoints.add(LatLng(lat2 * 180 / math.pi, lng2 * 180 / math.pi));
+    }
+
+    return circlePoints;
   }
 
   void onPolylineTapped(String polylineId) {
@@ -412,7 +511,6 @@ class PemetaanController extends GetxController {
     selectedRoadCondition.value = condition;
     isDrawingRoad.value = true;
     tempRoadPoints.clear();
-    updateTempPolyline();
   }
 
   /// Cek apakah ada titik di tempRoadPoints yang di luar polygon desa
@@ -433,7 +531,6 @@ class PemetaanController extends GetxController {
 
     if (tempRoadPoints.isEmpty) {
       tempRoadPoints.add(point);
-      updateTempPolyline();
       return;
     }
 
@@ -448,33 +545,18 @@ class PemetaanController extends GetxController {
       } else {
         tempRoadPoints.add(point);
       }
-
-      updateTempPolyline();
     } catch (e) {
       _logger.e('ROAD', 'Error getting route', error: e);
       tempRoadPoints.add(point);
-      updateTempPolyline();
     } finally {
       isLoadingRoute.value = false;
     }
   }
 
   void updateTempPolyline() {
-    polylines.removeWhere((p) => p.polylineId.value == 'temp_road');
-
-    if (tempRoadPoints.length < 2) return;
-
-    final condition = selectedRoadCondition.value ?? RoadCondition.rusak;
-
-    polylines.add(
-      Polyline(
-        polylineId: const PolylineId('temp_road'),
-        points: List.from(tempRoadPoints),
-        color: condition.color,
-        width: 6,
-        patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-      ),
-    );
+    // This method is now handled by the polylines getter
+    // Just trigger an update
+    polylines;
   }
 
   void clearSelectedRoad() {
@@ -566,80 +648,6 @@ class PemetaanController extends GetxController {
     tempRoadPoints.clear();
     isDrawingRoad.value = false;
     selectedRoadCondition.value = null;
-    polylines.removeWhere((p) => p.polylineId.value == 'temp_road');
-  }
-
-  // ---------------------------------------------------------------------------
-  // LOAD JALAN RUSAK (legacy polylines)
-  // ---------------------------------------------------------------------------
-  Future<void> loadJalanRusakFromFirebase() async {
-    try {
-      final snapshot = await _database.child('maps/jalan_rusak').get();
-
-      if (snapshot.exists) {
-        final data = Map<String, dynamic>.from(snapshot.value as Map);
-
-        for (var entry in data.entries) {
-          final roadData = Map<String, dynamic>.from(entry.value);
-          final points = (roadData['points'] as List)
-              .map((e) => LatLng(e['lat'], e['lng']))
-              .toList();
-
-          final condition = RoadCondition.values.firstWhere(
-            (e) => e.name == roadData['condition'],
-            orElse: () => RoadCondition.rusak,
-          );
-
-          polylines.add(
-            Polyline(
-              polylineId: PolylineId(entry.key),
-              points: points,
-              color: condition.color,
-              width: 6,
-              onTap: () => _showRoadDetail(entry.key, roadData),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      _logger.e('ROAD', 'Error loading roads', error: e);
-    }
-  }
-
-  void _showRoadDetail(String id, Map<String, dynamic> data) {
-    final condition = RoadCondition.values.firstWhere(
-      (e) => e.name == data['condition'],
-      orElse: () => RoadCondition.rusak,
-    );
-
-    Get.dialog(
-      AlertDialog(
-        title: Text(data['nama']),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Kondisi: ${condition.label}'),
-            if (data['deskripsi'].toString().isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Deskripsi: ${data['deskripsi']}'),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              Get.back();
-              await _database.child('maps/jalan_rusak/$id').remove();
-              polylines.removeWhere((p) => p.polylineId.value == id);
-              _showSnackbar('Jalan berhasil dihapus', TSnackbarType.success);
-            },
-            child: const Text('Hapus'),
-          ),
-          TextButton(onPressed: Get.back, child: const Text('Tutup')),
-        ],
-      ),
-    );
   }
 
   // ---------------------------------------------------------------------------
