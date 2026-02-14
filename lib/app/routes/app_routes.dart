@@ -27,6 +27,7 @@ abstract class Routes {
   static const MANAGE_ORGANIZATION = _Paths.MANAGE_ORGANIZATION;
   static const MANAGE_KEPALA_DESA_HISTORY = _Paths.MANAGE_KEPALA_DESA_HISTORY;
   static const MANAGE_TIMELINE_SEJARAH = _Paths.MANAGE_TIMELINE_SEJARAH;
+  static const PERTANIAN = _Paths.PERTANIAN;
 }
 
 abstract class _Paths {
@@ -57,4 +58,5 @@ abstract class _Paths {
       '/village-profile/manage-kepala-desa-history';
   static const MANAGE_TIMELINE_SEJARAH =
       '/village-profile/manage-timeline-sejarah';
+  static const PERTANIAN = '/pertanian';
 }

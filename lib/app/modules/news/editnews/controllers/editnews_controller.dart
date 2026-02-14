@@ -6,11 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sumberkerto_smart_village/app/core/services/location_service.dart';
 import 'package:sumberkerto_smart_village/app/data/models/news_model.dart';
 import 'package:sumberkerto_smart_village/app/data/services/media_compression_service.dart';
-import 'package:sumberkerto_smart_village/app/routes/app_pages.dart';
+import 'package:sumberkerto_smart_village/app/modules/news/controllers/news_controller.dart';
+import 'package:sumberkerto_smart_village/app/utils/location_picker_sheet.dart';
 import 'package:sumberkerto_smart_village/app/utils/snackbar_utils.dart';
 import 'package:image/image.dart' as img;
+import 'package:video_compress/video_compress.dart';
 
 class EditnewsController extends GetxController {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
@@ -138,6 +141,7 @@ class EditnewsController extends GetxController {
   final isUploading = false.obs;
   final uploadProgress = 0.0.obs;
   final isCompressing = false.obs;
+  final isDetectingLocation = false.obs;
 
   // Edit mode
   final isEditMode = false.obs;
@@ -329,6 +333,106 @@ class EditnewsController extends GetxController {
     }
   }
 
+  /// Show location picker bottom sheet
+  Future<void> showLocationPicker(BuildContext context) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LocationPickerSheet(
+        onLocationSelected: (location) {
+          locationController.text = location;
+          detectedLocation.value = location;
+        },
+      ),
+    );
+  }
+
+  /// Detect current location using GPS
+  Future<void> detectCurrentLocation(BuildContext context) async {
+    try {
+      isDetectingLocation.value = true;
+      context.showInfoSnackBar('Mendeteksi lokasi...');
+
+      // Get current position
+      final position = await LocationService.getCurrentLocation();
+
+      if (position == null) {
+        isDetectingLocation.value = false;
+        context.showErrorSnackBar(
+          'Tidak dapat mendeteksi lokasi. Pastikan GPS aktif dan izin lokasi diberikan.',
+        );
+        return;
+      }
+
+      print('📍 GPS Position: ${position.latitude}, ${position.longitude}');
+
+      // Get address from coordinates using Google Maps API
+      final address = await LocationService.getAddressFromCoordinates(
+        position.latitude,
+        position.longitude,
+        useGoogleMapsApi:
+            true, // Gunakan Google Maps API untuk hasil lebih akurat
+      );
+
+      if (address != null && address.isNotEmpty) {
+        locationController.text = address;
+        detectedLocation.value = address;
+        context.showSuccessSnackBar('📍 Lokasi terdeteksi: $address');
+      } else {
+        // Fallback ke geocoding package
+        final fallbackAddress = await LocationService.getAddressFromCoordinates(
+          position.latitude,
+          position.longitude,
+          useGoogleMapsApi: false,
+        );
+
+        if (fallbackAddress != null && fallbackAddress.isNotEmpty) {
+          locationController.text = fallbackAddress;
+          detectedLocation.value = fallbackAddress;
+          context.showSuccessSnackBar('📍 Lokasi terdeteksi: $fallbackAddress');
+        } else {
+          context.showWarningSnackBar(
+            'Lokasi terdeteksi, tapi alamat tidak ditemukan',
+          );
+        }
+      }
+
+      isDetectingLocation.value = false;
+    } catch (e) {
+      isDetectingLocation.value = false;
+      print('❌ Error detecting location: $e');
+      context.showErrorSnackBar('Gagal mendeteksi lokasi: ${e.toString()}');
+    }
+  }
+
+  /// Search nearby places (opsional - untuk fitur pencarian tempat)
+  Future<void> searchNearbyPlaces(BuildContext context) async {
+    try {
+      final position = await LocationService.getCurrentLocation();
+      if (position == null) {
+        context.showErrorSnackBar('Tidak dapat mendeteksi lokasi Anda');
+        return;
+      }
+
+      final places = await LocationService.getNearbyPlaces(
+        position.latitude,
+        position.longitude,
+        radius: 1000,
+      );
+
+      if (places.isNotEmpty) {
+        // Update location suggestions dengan nearby places
+        locationSuggestions.value = places
+            .map((place) => '${place['name']}, ${place['vicinity']}')
+            .toList();
+        showLocationSuggestions.value = true;
+      }
+    } catch (e) {
+      print('Error searching nearby places: $e');
+    }
+  }
+
   /// Select location from suggestions
   void selectLocation(String location) {
     locationController.text = location;
@@ -488,6 +592,7 @@ class EditnewsController extends GetxController {
     }
   }
 
+  /// Extract location from image EXIF data
   Future<void> extractLocationFromImage(File imageFile) async {
     try {
       final bytes = await imageFile.readAsBytes();
@@ -521,10 +626,25 @@ class EditnewsController extends GetxController {
       }
 
       if (_isValidCoordinate(latitude, longitude)) {
-        final locationName = _getIndonesiaRegion(latitude, longitude);
-        if (locationName != null) {
-          locationController.text = locationName;
-          detectedLocation.value = locationName;
+        print('📸 EXIF GPS: $latitude, $longitude');
+
+        // Try to get address from Google Maps API
+        final address = await LocationService.getAddressFromCoordinates(
+          latitude,
+          longitude,
+          useGoogleMapsApi: true,
+        );
+
+        if (address != null && address.isNotEmpty) {
+          locationController.text = address;
+          detectedLocation.value = address;
+        } else {
+          // Fallback to local region detection
+          final locationName = _getIndonesiaRegion(latitude, longitude);
+          if (locationName != null) {
+            locationController.text = locationName;
+            detectedLocation.value = locationName;
+          }
         }
       }
     } catch (e) {
@@ -821,7 +941,7 @@ class EditnewsController extends GetxController {
     existingBannerUrl.value = null;
   }
 
-  /// Pick video
+  /// Pick video dengan kualitas ditingkatkan
   Future<void> pickVideo(BuildContext context) async {
     try {
       final XFile? video = await _picker.pickVideo(
@@ -831,13 +951,26 @@ class EditnewsController extends GetxController {
 
       if (video != null) {
         isCompressing.value = true;
-        context.showInfoSnackBar('Mengompress video...');
+        context.showInfoSnackBar('Memproses video dengan kualitas tinggi...');
 
         final File videoFileTemp = File(video.path);
 
-        // Compress video
+        // Get video info untuk menentukan strategi kompresi
+        final videoInfo = await MediaCompressionService.getVideoInfo(
+          videoFileTemp.path,
+        );
+
+        if (videoInfo != null) {
+          final originalSize = videoInfo.filesize! / 1024 / 1024; // MB
+          print('📹 Video original: ${originalSize.toStringAsFixed(2)} MB');
+          print('📐 Resolusi: ${videoInfo.width}x${videoInfo.height}');
+        }
+
+        // Compress video dengan HighestQuality untuk menjaga resolusi dan kualitas
         final compressed = await MediaCompressionService.compressVideo(
           videoFileTemp,
+          quality: VideoQuality.HighestQuality, // Kualitas tertinggi
+          deleteOrigin: false,
         );
 
         if (compressed != null) {
@@ -847,22 +980,30 @@ class EditnewsController extends GetxController {
           existingVideoUrl.value = null;
           existingVideoThumbnailUrl.value = null;
 
-          // Generate thumbnail
+          // Generate thumbnail dengan kualitas tinggi
           final thumbnail =
-              await MediaCompressionService.generateVideoThumbnail(compressed);
+              await MediaCompressionService.generateVideoThumbnail(
+                compressed,
+                quality: 90, // Thumbnail berkualitas tinggi
+              );
           videoThumbnail.value = thumbnail;
 
           final size = await compressed.length();
+          final sizeInMB = size / 1024 / 1024;
+
           context.showSuccessSnackBar(
-            'Video dikompress ke ${(size / 1024 / 1024).toStringAsFixed(2)} MB',
+            'Video siap! Ukuran: ${sizeInMB.toStringAsFixed(2)} MB',
           );
+        } else {
+          context.showErrorSnackBar('Gagal memproses video');
         }
 
         isCompressing.value = false;
       }
     } catch (e) {
       isCompressing.value = false;
-      context.showErrorSnackBar('Gagal memilih video');
+      print('❌ Error picking video: $e');
+      context.showErrorSnackBar('Gagal memilih video: ${e.toString()}');
     }
   }
 
@@ -1080,6 +1221,7 @@ class EditnewsController extends GetxController {
 
       print('Saving news with username: $userName');
       print('Tags: $finalTags');
+      print('Location: ${locationController.text.trim()}');
 
       // Save to Realtime Database
       await newsRef.set(newsData);
@@ -1093,11 +1235,17 @@ class EditnewsController extends GetxController {
             : 'Berita berhasil dipublikasikan!',
       );
 
-      // Wait a bit for snackbar to show then navigate
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Navigate back to news view
-      Get.offAllNamed(Routes.NEWS);
+      Get.back(result: true);
+
+      if (Get.isRegistered<NewsController>()) {
+        try {
+          Get.find<NewsController>().refreshNews(context: context);
+        } catch (e) {
+          print('NewsController not found: $e');
+        }
+      }
     } catch (e) {
       isUploading.value = false;
       uploadProgress.value = 0.0;

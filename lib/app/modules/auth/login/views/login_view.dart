@@ -7,6 +7,7 @@ import 'package:sumberkerto_smart_village/app/common/spaces.dart';
 import 'package:sumberkerto_smart_village/app/common/text_fields.dart';
 import 'package:sumberkerto_smart_village/app/core/const/color_const.dart';
 import 'package:sumberkerto_smart_village/app/core/const/google_text_style_const.dart';
+import 'package:sumberkerto_smart_village/app/core/const/asset_const.dart';
 import '../../../../routes/app_pages.dart';
 import '../controllers/login_controller.dart';
 
@@ -20,7 +21,6 @@ class LoginView extends GetView<LoginController> {
       body: SafeArea(
         child: Column(
           children: [
-            // ===== CONTENT (SCROLL) =====
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -40,6 +40,7 @@ class LoginView extends GetView<LoginController> {
 
                     TSpaces.v32(),
 
+                    // EMAIL
                     Text('Email', style: TGoogleTextStyleConst.inter14Medium),
                     TSpaces.v8(),
                     TTextFields.buildStandard(
@@ -51,6 +52,7 @@ class LoginView extends GetView<LoginController> {
 
                     TSpaces.v20(),
 
+                    // PASSWORD
                     Text(
                       'Kata Sandi',
                       style: TGoogleTextStyleConst.inter14Medium,
@@ -79,13 +81,11 @@ class LoginView extends GetView<LoginController> {
 
             Divider(color: TColorsConst.neutral200, height: 1),
 
-            // ===== FOOTER =====
             Padding(
               padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 24.h),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // BUTTON LOGIN BIASA
+                  // LOGIN BUTTON
                   Obx(
                     () => TButtons.primary(
                       onPressed: controller.isLoading.value
@@ -98,50 +98,106 @@ class LoginView extends GetView<LoginController> {
                     ),
                   ),
 
-                  // BUTTON BIOMETRIK (TAMBAHKAN DI SINI)
-                  Obx(() {
-                    if (controller.canUseBiometric.value) {
-                      return Column(
-                        children: [
-                          TSpaces.v12(),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Divider(color: TColorsConst.neutral300),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                                child: Text(
-                                  'atau',
-                                  style: TGoogleTextStyleConst.inter12Regular
-                                      .copyWith(color: TColorsConst.neutral500),
+                  TSpaces.v16(),
+
+                  // DIVIDER
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: TColorsConst.neutral300,
+                          thickness: 1,
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        child: Text(
+                          'atau',
+                          style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                            color: TColorsConst.neutral500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: TColorsConst.neutral300,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  TSpaces.v16(),
+
+                  // GOOGLE LOGIN (ICON SAMA SEPERTI REGISTER)
+                  Obx(
+                    () => OutlinedButton(
+                      onPressed: controller.isGoogleLoading.value
+                          ? null
+                          : () => controller.loginWithGoogle(context),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 48.h),
+                        side: BorderSide(
+                          color: TColorsConst.neutral300,
+                          width: 1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        backgroundColor: TColorsConst.white,
+                      ),
+                      child: controller.isGoogleLoading.value
+                          ? SizedBox(
+                              height: 20.h,
+                              width: 20.w,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  TColorsConst.blue500,
                                 ),
                               ),
-                              Expanded(
-                                child: Divider(color: TColorsConst.neutral300),
-                              ),
-                            ],
-                          ),
-                          TSpaces.v12(),
-                          OutlinedButton.icon(
-                            onPressed: controller.isLoading.value
-                                ? null
-                                : () => controller.loginWithBiometric(context),
-                            icon: const Icon(Icons.fingerprint),
-                            label: const Text('Masuk dengan Biometrik'),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: Size(double.infinity, 48.h),
-                              side: BorderSide(
-                                color: TColorsConst.blue500,
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.r),
-                              ),
-                              foregroundColor: TColorsConst.blue500,
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  TAssetsConst.iconGoogle, // ✅ SAMA REGISTER
+                                  height: 20.h,
+                                  width: 20.w,
+                                ),
+                                SizedBox(width: 12.w),
+                                Text(
+                                  'Masuk dengan Google',
+                                  style: TGoogleTextStyleConst.inter14Medium
+                                      .copyWith(color: TColorsConst.neutral700),
+                                ),
+                              ],
                             ),
+                    ),
+                  ),
+
+                  TSpaces.v16(),
+
+                  // BIOMETRIC BUTTON
+                  Obx(() {
+                    if (controller.canUseBiometric.value) {
+                      return OutlinedButton.icon(
+                        onPressed: controller.isLoading.value
+                            ? null
+                            : () => controller.loginWithBiometric(context),
+                        icon: const Icon(Icons.fingerprint),
+                        label: const Text('Masuk dengan Biometrik'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 48.h),
+                          side: BorderSide(
+                            color: TColorsConst.blue500,
+                            width: 1.5,
                           ),
-                        ],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          foregroundColor: TColorsConst.blue500,
+                        ),
                       );
                     }
                     return const SizedBox.shrink();

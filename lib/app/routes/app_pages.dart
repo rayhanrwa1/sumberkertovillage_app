@@ -1,9 +1,4 @@
 import 'package:get/get.dart';
-import 'package:sumberkerto_smart_village/app/modules/modules/village_profile/views/Manage_kepala_desa_history.dart';
-import 'package:sumberkerto_smart_village/app/modules/modules/village_profile/views/Manage_timeline_sejarah_view.dart';
-import 'package:sumberkerto_smart_village/app/modules/modules/village_profile/views/manage_organize.dart';
-import 'package:sumberkerto_smart_village/app/modules/modules/village_profile/views/village_data_manage.dart';
-
 import '../modules/auth/login/bindings/login_binding.dart';
 import '../modules/auth/login/views/login_view.dart';
 import '../modules/auth/otp/bindings/otp_binding.dart';
@@ -22,6 +17,15 @@ import '../modules/modules/pemetaan/bindings/pemetaan_binding.dart';
 import '../modules/modules/pemetaan/views/pemetaan_view.dart';
 import '../modules/modules/penduduk/bindings/penduduk_binding.dart';
 import '../modules/modules/penduduk/views/penduduk_view.dart';
+import '../modules/modules/pertanian/bindings/pertanian_binding.dart';
+import '../modules/modules/pertanian/views/pertanian_view.dart' show PertanianView;
+import '../modules/modules/village_profile/bindings/village_profile_binding.dart';
+import '../modules/modules/village_profile/views/Manage_kepala_desa_history.dart';
+import '../modules/modules/village_profile/views/Manage_timeline_sejarah_view.dart';
+import '../modules/modules/village_profile/views/manage_organize.dart';
+import '../modules/modules/village_profile/views/village_data_manage.dart';
+import '../modules/modules/village_profile/views/village_profile_edit_view.dart';
+import '../modules/modules/village_profile/views/village_profile_view.dart';
 import '../modules/news/bindings/news_binding.dart';
 import '../modules/news/editnews/bindings/editnews_binding.dart';
 import '../modules/news/editnews/views/editnews_view.dart';
@@ -36,9 +40,6 @@ import '../modules/profile/editprofile/views/editprofile_view.dart';
 import '../modules/profile/views/profile_view.dart';
 import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
-import '../modules/modules/village_profile/bindings/village_profile_binding.dart';
-import '../modules/modules/village_profile/views/village_profile_view.dart';
-import '../modules/modules/village_profile/views/village_profile_edit_view.dart';
 import '../modules/welcome/bindings/welcome_binding.dart';
 import '../modules/welcome/views/welcome_view.dart';
 
@@ -162,6 +163,11 @@ class AppPages {
       name: _Paths.MANAGE_TIMELINE_SEJARAH,
       page: () => const ManageTimelineSejarahView(),
       binding: VillageProfileBinding(),
+    ),
+    GetPage(
+      name: _Paths.PERTANIAN,
+      page: () => const PertanianView(),
+      binding: PertanianBinding(),
     ),
   ];
 }

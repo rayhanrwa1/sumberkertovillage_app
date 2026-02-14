@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sumberkerto_smart_village/app/utils/snackbar_utils.dart';
 import '../../../../routes/app_pages.dart';
 
@@ -13,12 +14,12 @@ class LoginController extends GetxController {
 
   final isPasswordHidden = true.obs;
   final isLoading = false.obs;
+  final isGoogleLoading = false.obs;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
   final LocalAuthentication _localAuth = LocalAuthentication();
 
-  // Biometric states
   final canUseBiometric = false.obs;
   final lastLoggedInEmail = ''.obs;
 
@@ -28,79 +29,30 @@ class LoginController extends GetxController {
     _checkBiometricForLastUser();
   }
 
-  Future<void> _checkBiometricForLastUser() async {
-    try {
-      final storage = FlutterSecureStorage();
-
-      final lastEmail = await storage.read(key: 'last_email');
-      final biometricEnabled = await storage.read(key: 'biometric_enabled');
-
-      if (lastEmail == null || biometricEnabled != 'true') return;
-
-      final biometrics = await _localAuth.getAvailableBiometrics();
-
-      print('DEBUG availableBiometrics: $biometrics');
-
-      if (biometrics.isNotEmpty) {
-        canUseBiometric.value = true;
-        lastLoggedInEmail.value = lastEmail;
-        emailController.text = lastEmail;
-      }
-    } catch (e) {
-      print('Biometric check error: $e');
-    }
+  // =========================
+  // EXP CALCULATION (4 HARI)
+  // =========================
+  int _generateExpTimestamp() {
+    final now = DateTime.now();
+    final expired = now.add(const Duration(days: 4));
+    return expired.millisecondsSinceEpoch;
   }
 
-  Future<void> loginWithBiometric(BuildContext context) async {
-    try {
-      isLoading.value = true;
+  Future<void> _saveExpToDatabase(String uid) async {
+    final expTimestamp = _generateExpTimestamp();
 
-      final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Gunakan biometrik untuk masuk',
-      );
-
-      if (!authenticated) {
-        context.showWarningSnackBar('Autentikasi biometrik dibatalkan');
-        return;
-      }
-
-      // Ambil kredensial dari secure storage
-      final storedPassword = await _getStoredPassword(lastLoggedInEmail.value);
-      if (storedPassword == null) {
-        context.showErrorSnackBar('Data login tidak ditemukan');
-        canUseBiometric.value = false;
-        return;
-      }
-
-      // Login otomatis
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: lastLoggedInEmail.value,
-        password: storedPassword,
-      );
-
-      final user = userCredential.user;
-      if (user == null) {
-        context.showErrorSnackBar('User tidak ditemukan');
-        return;
-      }
-
-      context.showSuccessSnackBar('Berhasil masuk dengan biometrik');
-      Get.offAllNamed(Routes.MAIN);
-    } catch (e) {
-      context.showErrorSnackBar('Login biometrik gagal: ${e.toString()}');
-      canUseBiometric.value = false;
-    } finally {
-      isLoading.value = false;
-    }
+    await _database.child('users').child(uid).update({
+      'exp': expTimestamp,
+      'last_login': ServerValue.timestamp,
+    });
   }
 
-  void togglePassword() {
-    isPasswordHidden.value = !isPasswordHidden.value;
-  }
-
+  // =========================
+  // LOGIN EMAIL
+  // =========================
   Future<void> login(BuildContext context) async {
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-      context.showWarningSnackBar('Email dan kata sandi wajib diisi');
+      context.showWarningSnackBar('Email dan password wajib diisi');
       return;
     }
 
@@ -113,7 +65,6 @@ class LoginController extends GetxController {
       );
 
       final user = userCredential.user;
-
       if (user == null) {
         context.showErrorSnackBar('User tidak ditemukan');
         return;
@@ -128,14 +79,9 @@ class LoginController extends GetxController {
         return;
       }
 
-      final snapshot = await _database.child('users').child(user.uid).get();
+      // ✅ SET EXP 4 HARI
+      await _saveExpToDatabase(user.uid);
 
-      if (!snapshot.exists) {
-        context.showErrorSnackBar('Data user tidak ditemukan di database');
-        return;
-      }
-
-      // Simpan kredensial untuk biometrik
       await _saveLoginCredentials(
         emailController.text.trim(),
         passwordController.text.trim(),
@@ -153,33 +99,131 @@ class LoginController extends GetxController {
     }
   }
 
-  // ===== HELPER METHODS =====
+  // =========================
+  // LOGIN GOOGLE (ICON SAMA)
+  // =========================
+  Future<void> loginWithGoogle(BuildContext context) async {
+    try {
+      isGoogleLoading.value = true;
 
+      final googleSignIn = GoogleSignIn.instance;
+      await googleSignIn.initialize();
+
+      final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
+
+      final googleAuth = googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      final user = userCredential.user;
+      if (user == null) {
+        context.showErrorSnackBar('User tidak ditemukan');
+        return;
+      }
+
+      // ✅ SET EXP 4 HARI
+      await _saveExpToDatabase(user.uid);
+
+      context.showSuccessSnackBar('Login dengan Google berhasil');
+      Get.offAllNamed(Routes.MAIN);
+    } catch (e) {
+      context.showErrorSnackBar('Google login gagal');
+    } finally {
+      isGoogleLoading.value = false;
+    }
+  }
+
+  // =========================
+  // BIOMETRIC
+  // =========================
+  Future<void> loginWithBiometric(BuildContext context) async {
+    try {
+      isLoading.value = true;
+
+      final authenticated = await _localAuth.authenticate(
+        localizedReason: 'Gunakan biometrik untuk masuk',
+      );
+
+      if (!authenticated) {
+        context.showWarningSnackBar('Autentikasi biometrik dibatalkan');
+        return;
+      }
+
+      final storedPassword = await _getStoredPassword(lastLoggedInEmail.value);
+
+      if (storedPassword == null) {
+        context.showErrorSnackBar('Data login tidak ditemukan');
+        return;
+      }
+
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: lastLoggedInEmail.value,
+        password: storedPassword,
+      );
+
+      final user = userCredential.user;
+      if (user == null) {
+        context.showErrorSnackBar('User tidak ditemukan');
+        return;
+      }
+
+      await _saveExpToDatabase(user.uid);
+
+      context.showSuccessSnackBar('Berhasil masuk dengan biometrik');
+      Get.offAllNamed(Routes.MAIN);
+    } catch (e) {
+      context.showErrorSnackBar('Login biometrik gagal');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> _checkBiometricForLastUser() async {
+    try {
+      final storage = const FlutterSecureStorage();
+
+      final lastEmail = await storage.read(key: 'last_email');
+      final biometricEnabled = await storage.read(key: 'biometric_enabled');
+
+      if (lastEmail == null || biometricEnabled != 'true') return;
+
+      final biometrics = await _localAuth.getAvailableBiometrics();
+
+      if (biometrics.isNotEmpty) {
+        canUseBiometric.value = true;
+        lastLoggedInEmail.value = lastEmail;
+        emailController.text = lastEmail;
+      }
+    } catch (e) {
+      print('Biometric check error: $e');
+    }
+  }
+
+  void togglePassword() {
+    isPasswordHidden.toggle();
+  }
+
+  // =========================
+  // STORAGE
+  // =========================
   Future<void> _saveLoginCredentials(
     String email,
     String password,
     String uid,
   ) async {
-    // Gunakan flutter_secure_storage untuk simpan password
-    final storage = FlutterSecureStorage();
+    const storage = FlutterSecureStorage();
     await storage.write(key: 'last_email', value: email);
     await storage.write(key: 'pwd_$email', value: password);
     await storage.write(key: 'uid_$email', value: uid);
   }
 
-  Future<String> _getLastLoggedInEmail() async {
-    final storage = FlutterSecureStorage();
-    return await storage.read(key: 'last_email') ?? '';
-  }
-
   Future<String?> _getStoredPassword(String email) async {
-    final storage = FlutterSecureStorage();
+    const storage = FlutterSecureStorage();
     return await storage.read(key: 'pwd_$email');
-  }
-
-  Future<String?> _getUidFromEmail(String email) async {
-    final storage = FlutterSecureStorage();
-    return await storage.read(key: 'uid_$email');
   }
 
   @override

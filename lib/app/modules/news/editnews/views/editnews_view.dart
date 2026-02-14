@@ -87,7 +87,7 @@ class EditnewsView extends GetView<EditnewsController> {
                     const SizedBox(height: 20),
                     _buildCategoryField(),
                     const SizedBox(height: 20),
-                    _buildLocationField(),
+                    _buildLocationField(context),
                     const SizedBox(height: 20),
                     _buildAutoTagsSection(),
                     const SizedBox(height: 100),
@@ -855,90 +855,167 @@ class EditnewsView extends GetView<EditnewsController> {
     );
   }
 
-  Widget _buildLocationField() {
+  Widget _buildLocationField(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Lokasi',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        SizedBox(height: 8),
-        Stack(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // TextField Lokasi
-            TextField(
-              controller: controller.locationController,
-              decoration: InputDecoration(
-                hintText: 'Pilih lokasi...',
-                prefixIcon: Icon(Icons.location_on_outlined),
-                suffixIcon: controller.locationController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear),
-                        onPressed: () {
-                          controller.locationController.clear();
-                          controller.showLocationSuggestions.value = false;
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            const Text(
+              'Lokasi',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2C3E50),
               ),
             ),
-
-            // Suggestions dropdown
-            Obx(() {
-              if (!controller.showLocationSuggestions.value ||
-                  controller.locationSuggestions.isEmpty) {
-                return SizedBox.shrink();
-              }
-
-              return Positioned(
-                top: 60,
-                left: 0,
-                right: 0,
-                child: Material(
-                  elevation: 4,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    constraints: BoxConstraints(maxHeight: 200),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
+            Row(
+              children: [
+                // Tombol search lokasi (seperti Instagram)
+                TextButton.icon(
+                  onPressed: () => controller.showLocationPicker(context),
+                  icon: const Icon(
+                    Icons.search,
+                    size: 18,
+                    color: Color(0xFF2C3E50),
+                  ),
+                  label: const Text(
+                    'Cari',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF2C3E50),
+                      fontWeight: FontWeight.w600,
                     ),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: controller.locationSuggestions.length,
-                      itemBuilder: (context, index) {
-                        final suggestion =
-                            controller.locationSuggestions[index];
-                        return ListTile(
-                          dense: true,
-                          leading: Icon(Icons.place, size: 20),
-                          title: Text(suggestion),
-                          onTap: () {
-                            controller.selectLocation(suggestion);
-                          },
-                        );
-                      },
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    backgroundColor: Colors.grey.withOpacity(0.1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
-              );
-            }),
+                const SizedBox(width: 8),
+                // Tombol deteksi GPS
+                Obx(
+                  () => controller.isDetectingLocation.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF2C3E50),
+                          ),
+                        )
+                      : TextButton.icon(
+                          onPressed: () =>
+                              controller.detectCurrentLocation(context),
+                          icon: const Icon(
+                            Icons.my_location,
+                            size: 18,
+                            color: Color(0xFF2C3E50),
+                          ),
+                          label: const Text(
+                            'GPS',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF2C3E50),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            backgroundColor: Colors.blue.withOpacity(0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ],
         ),
-        SizedBox(height: 4),
-        Text(
-          '💡 Tip: Ketik nama kota untuk melihat saran lokasi',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-            fontStyle: FontStyle.italic,
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: TextField(
+            controller: controller.locationController,
+            style: const TextStyle(color: Color(0xFF2C3E50), fontSize: 15),
+            decoration: InputDecoration(
+              hintText: 'Cari atau deteksi lokasi...',
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+              prefixIcon: const Icon(
+                Icons.location_on_outlined,
+                color: Color(0xFF2C3E50),
+              ),
+              suffixIcon: controller.locationController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Color(0xFF2C3E50)),
+                      onPressed: () {
+                        controller.locationController.clear();
+                        controller.detectedLocation.value = null;
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            readOnly: true,
+            onTap: () => controller.showLocationPicker(context),
           ),
         ),
+        const SizedBox(height: 8),
+        Obx(() {
+          if (controller.detectedLocation.value != null) {
+            return Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Lokasi dipilih',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          return Text(
+            '💡 Tip: Tekan "Cari" untuk mencari lokasi atau "GPS" untuk deteksi otomatis',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          );
+        }),
       ],
     );
   }

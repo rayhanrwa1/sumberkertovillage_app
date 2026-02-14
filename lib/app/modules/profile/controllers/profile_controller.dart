@@ -18,7 +18,7 @@ class ProfileController extends GetxController {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final LocalAuthentication _localAuth = LocalAuthentication();
 
-  final name = ''.obs;
+  final name = ''.obs;  
   final email = ''.obs;
   final role = ''.obs;
   final provider = ''.obs;

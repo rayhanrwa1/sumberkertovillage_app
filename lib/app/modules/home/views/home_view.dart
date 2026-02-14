@@ -285,13 +285,13 @@ class HomeView extends GetView<HomeController> {
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
         'route': Routes.VILLAGE_PROFILE, // Route baru
       },
-      {
-        'title': 'Data Penduduk',
-        'subtitle': 'NIK, KK, RT/RW, status warga',
-        'image': TAssetsConst.iconPenduduk,
-        'bgColor': const Color.fromARGB(255, 255, 255, 255),
-        'route': '', // Belum ada route
-      },
+      // {
+      //   'title': 'Data Penduduk',
+      //   'subtitle': 'NIK, KK, RT/RW, status warga',
+      //   'image': TAssetsConst.iconPenduduk,
+      //   'bgColor': const Color.fromARGB(255, 255, 255, 255),
+      //   'route': '', // Belum ada route
+      // },
       {
         'title': 'Data Pertanian',
         'subtitle': 'Luas sawah, panen padi, pupuk',

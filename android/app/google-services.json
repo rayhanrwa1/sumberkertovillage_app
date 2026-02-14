@@ -13,7 +13,12 @@
           "package_name": "com.example.sumberkerto_smart_village"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "751589005070-0286320bgcfgerv1d9v61h0grl6ie8fh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB0B23crqZFgjroHlV4Xfj2MiNvFbJj-r4"
@@ -21,7 +26,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "751589005070-0286320bgcfgerv1d9v61h0grl6ie8fh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "751589005070-mgfuls51ba2gt0oon97jvbpv016ffevb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.sumberkertoSmartVillage"
+              }
+            }
+          ]
         }
       }
     }

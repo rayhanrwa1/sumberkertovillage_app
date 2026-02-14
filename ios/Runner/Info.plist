@@ -63,5 +63,22 @@
 	<string>Aplikasi membutuhkan akses galeri untuk memilih foto profil</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Aplikasi membutuhkan akses untuk menyimpan foto</string>
+
+	<!-- Google Sign-In Configuration -->
+	<key>GIDClientID</key>
+	<string>751589005070-mgfuls51ba2gt0oon97jvbpv016ffevb.apps.googleusercontent.com</string>
+	
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.751589005070-mgfuls51ba2gt0oon97jvbpv016ffevb</string>
+			</array>
+		</dict>
+	</array>
+
 </dict>
 </plist>

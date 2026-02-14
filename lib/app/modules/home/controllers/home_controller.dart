@@ -11,7 +11,6 @@ class HomeController extends GetxController {
   final isProfileComplete = false.obs;
   final isAdmin = false.obs;
 
-  // Village Profile Data
   final villageProfile = <String, dynamic>{}.obs;
   final isLoadingVillageData = false.obs;
 

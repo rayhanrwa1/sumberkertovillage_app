@@ -2,27 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:video_player/video_player.dart';
 import '../controllers/newsview_controller.dart';
+import 'fullscreen_video_player.dart';
 
 class NewsviewView extends GetView<NewsviewController> {
   const NewsviewView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final hasVideo =
+        controller.news.videoUrl != null &&
+        controller.news.videoUrl!.isNotEmpty;
+    final hasImages =
+        controller.news.images.isNotEmpty ||
+        (controller.news.bannerImage != null &&
+            controller.news.bannerImage!.isNotEmpty);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       body: CustomScrollView(
         slivers: [
-          // App Bar dengan gambar
+          // App Bar
           SliverAppBar(
-            expandedHeight: 250,
+            expandedHeight: hasVideo ? 300 : (hasImages ? 250 : 120),
             pinned: true,
             backgroundColor: const Color(0xFF2C3E50),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
               onPressed: () => Get.back(),
             ),
-            flexibleSpace: FlexibleSpaceBar(background: _buildHeaderImage()),
+            actions: [
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.share, color: Colors.white, size: 20),
+                ),
+                onPressed: () {
+                  // TODO: Implement share
+                },
+              ),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: hasVideo
+                  ? _buildVideoPlayer()
+                  : hasImages
+                  ? _buildHeaderImage()
+                  : _buildNoMediaHeader(),
+            ),
           ),
 
           // Content
@@ -37,30 +79,21 @@ class NewsviewView extends GetView<NewsviewController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Category Tag
+                        _buildTypeBadge(hasVideo, hasImages),
+                        const SizedBox(height: 12),
+
                         if (controller.news.tags.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2C3E50).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              controller.news.tags.first,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF2C3E50),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: controller.news.tags
+                                .take(3)
+                                .map((tag) => _buildCategoryTag(tag))
+                                .toList(),
                           ),
 
                         const SizedBox(height: 16),
 
-                        // Title
                         Text(
                           controller.news.title,
                           style: const TextStyle(
@@ -71,102 +104,40 @@ class NewsviewView extends GetView<NewsviewController> {
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
 
-                        // Author info
-                        // Di bagian Author info, ganti dengan:
-                        Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2C3E50).withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Obx(() {
-                                final name = controller.creatorName.value;
-                                return Center(
-                                  child: Text(
-                                    name.isNotEmpty
-                                        ? name.substring(0, 1).toUpperCase()
-                                        : 'A',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF2C3E50),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Obx(
-                                    () => Text(
-                                      controller.creatorName.value,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF2C3E50),
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    timeago.format(
-                                      controller.news.createdAt,
-                                      locale: 'id',
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                        _buildAuthorInfo(),
 
                         const SizedBox(height: 16),
 
-                        // Stats
-                        Row(
-                          children: [
-                            _buildStat(
-                              Icons.visibility_outlined,
-                              '${controller.news.viewCount}',
-                            ),
-                            const SizedBox(width: 20),
-                            _buildStat(
-                              Icons.favorite_outline,
-                              '${controller.news.likeCount}',
-                            ),
-                          ],
-                        ),
+                        _buildStatsRow(),
 
                         const SizedBox(height: 24),
                         const Divider(),
                         const SizedBox(height: 24),
 
-                        // Description/Content
                         Text(
                           controller.news.description,
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey[800],
-                            height: 1.6,
+                            height: 1.7,
+                            letterSpacing: 0.2,
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 32),
 
-                        // Additional Images
-                        if (controller.news.images.isNotEmpty)
+                        if (controller.news.location != null &&
+                            controller.news.location!.isNotEmpty)
+                          _buildLocationInfo(),
+
+                        if (controller.news.images.length > 1 ||
+                            (controller.news.images.length == 1 &&
+                                controller.news.bannerImage != null))
                           _buildImageGallery(),
+
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
@@ -179,22 +150,209 @@ class NewsviewView extends GetView<NewsviewController> {
     );
   }
 
+  // Video Player with Fullscreen Button
+  Widget _buildVideoPlayer() {
+    return Obx(() {
+      if (!controller.isVideoInitialized.value) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            if (controller.news.videoThumbnail != null &&
+                controller.news.videoThumbnail!.isNotEmpty)
+              CachedNetworkImage(
+                imageUrl: controller.news.videoThumbnail!,
+                fit: BoxFit.cover,
+              )
+            else
+              Container(color: Colors.grey[900]),
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      return GestureDetector(
+        onTap: controller.toggleControls,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Video player
+            FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: controller.videoPlayerController!.value.size.width,
+                height: controller.videoPlayerController!.value.size.height,
+                child: VideoPlayer(controller.videoPlayerController!),
+              ),
+            ),
+
+            // Gradient overlay when paused
+            if (!controller.isVideoPlaying.value)
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.4),
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.4),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Play/Pause button
+            if (controller.showControls.value ||
+                !controller.isVideoPlaying.value)
+              Center(
+                child: GestureDetector(
+                  onTap: controller.togglePlayPause,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      controller.isVideoPlaying.value
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  ),
+                ),
+              ),
+
+            // Video controls bar
+            if (controller.showControls.value)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.7),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Progress bar
+                      VideoProgressIndicator(
+                        controller.videoPlayerController!,
+                        allowScrubbing: true,
+                        colors: const VideoProgressColors(
+                          playedColor: Colors.red,
+                          bufferedColor: Colors.white30,
+                          backgroundColor: Colors.white10,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Time and fullscreen button
+                      Row(
+                        children: [
+                          Text(
+                            controller.formatDuration(
+                              controller.videoPlayerController!.value.position,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const Spacer(),
+                          // Fullscreen button
+                          IconButton(
+                            icon: const Icon(Icons.fullscreen),
+                            onPressed: () async {
+                              await controller.enterFullscreen();
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            controller.formatDuration(
+                              controller.videoPlayerController!.value.duration,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Video badge
+            Positioned(
+              top: 60,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.play_arrow, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'VIDEO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
   Widget _buildHeaderImage() {
     String? imageUrl;
 
-    // Priority: bannerImage > first image > videoThumbnail
     if (controller.news.bannerImage != null &&
         controller.news.bannerImage!.isNotEmpty) {
       imageUrl = controller.news.bannerImage;
-    } else if (controller.news.images.isNotEmpty &&
-        controller.news.images.first.isNotEmpty) {
+    } else if (controller.news.images.isNotEmpty) {
       imageUrl = controller.news.images.first;
-    } else if (controller.news.videoThumbnail != null &&
-        controller.news.videoThumbnail!.isNotEmpty) {
-      imageUrl = controller.news.videoThumbnail;
     }
 
-    if (imageUrl != null) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
       return Stack(
         fit: StackFit.expand,
         children: [
@@ -216,13 +374,16 @@ class NewsviewView extends GetView<NewsviewController> {
               ),
             ),
           ),
-          // Gradient overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.black.withOpacity(0.3), Colors.transparent],
+                colors: [
+                  Colors.black.withOpacity(0.4),
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.3),
+                ],
               ),
             ),
           ),
@@ -230,54 +391,304 @@ class NewsviewView extends GetView<NewsviewController> {
       );
     }
 
+    return _buildNoMediaHeader();
+  }
+
+  Widget _buildNoMediaHeader() {
     return Container(
-      color: const Color(0xFF2C3E50),
-      child: Icon(
-        Icons.article_outlined,
-        size: 64,
-        color: Colors.white.withOpacity(0.5),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2C3E50), Color(0xFF3498db)],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.article_outlined,
+          size: 64,
+          color: Colors.white.withOpacity(0.5),
+        ),
       ),
     );
   }
 
-  Widget _buildStat(IconData icon, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 6),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[700],
-            fontWeight: FontWeight.w500,
+  Widget _buildTypeBadge(bool hasVideo, bool hasImages) {
+    IconData icon;
+    String label;
+    Color color;
+
+    if (hasVideo) {
+      icon = Icons.play_arrow;
+      label = 'VIDEO';
+      color = Colors.red;
+    } else if (hasImages) {
+      icon = Icons.image;
+      label = 'FOTO';
+      color = const Color(0xFF2C3E50);
+    } else {
+      icon = Icons.article;
+      label = 'ARTIKEL';
+      color = Colors.orange;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryTag(String tag) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C3E50).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        tag,
+        style: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF2C3E50),
+          fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+
+  Widget _buildAuthorInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C3E50).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Obx(() {
+              final name = controller.creatorName.value;
+              return Center(
+                child: Text(
+                  name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C3E50),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Obx(
+                  () => Text(
+                    controller.creatorName.value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  timeago.format(controller.news.createdAt, locale: 'id'),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsRow() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(
+            Icons.visibility_outlined,
+            '${controller.news.viewCount}',
+            'Dilihat',
+          ),
+          Container(width: 1, height: 30, color: Colors.grey[300]),
+          _buildStatItem(
+            Icons.favorite_outline,
+            '${controller.news.likeCount}',
+            'Suka',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: const Color(0xFF2C3E50)),
+            const SizedBox(width: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF2C3E50),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
 
+  Widget _buildLocationInfo() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[100]!),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blue[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.location_on, color: Colors.blue, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Lokasi',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  controller.news.location!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF2C3E50),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildImageGallery() {
+    List<String> galleryImages = [];
+
+    if (controller.news.bannerImage != null &&
+        controller.news.bannerImage!.isNotEmpty) {
+      galleryImages = controller.news.images
+          .where((img) => img.isNotEmpty)
+          .toList();
+    } else if (controller.news.images.length > 1) {
+      galleryImages = controller.news.images
+          .skip(1)
+          .where((img) => img.isNotEmpty)
+          .toList();
+    }
+
+    if (galleryImages.isEmpty) return const SizedBox();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Galeri Foto',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
-          ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C3E50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.photo_library,
+                size: 20,
+                color: Color(0xFF2C3E50),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Galeri Foto (${galleryImages.length})',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2C3E50),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         SizedBox(
-          height: 120,
+          height: 140,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: controller.news.images.length,
+            itemCount: galleryImages.length,
             itemBuilder: (context, index) {
-              final imageUrl = controller.news.images[index];
-              if (imageUrl.isEmpty) return const SizedBox();
+              final imageUrl = galleryImages[index];
 
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
@@ -285,17 +696,23 @@ class NewsviewView extends GetView<NewsviewController> {
                   borderRadius: BorderRadius.circular(12),
                   child: CachedNetworkImage(
                     imageUrl: imageUrl,
-                    width: 120,
-                    height: 120,
+                    width: 140,
+                    height: 140,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      width: 120,
-                      height: 120,
+                      width: 140,
+                      height: 140,
                       color: Colors.grey[200],
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF2C3E50),
+                          strokeWidth: 2,
+                        ),
+                      ),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      width: 120,
-                      height: 120,
+                      width: 140,
+                      height: 140,
                       color: Colors.grey[200],
                       child: const Icon(Icons.error_outline),
                     ),

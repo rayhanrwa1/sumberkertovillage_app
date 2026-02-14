@@ -30,6 +30,7 @@ class NewsController extends GetxController {
   // Filter options
   final selectedCategory = ''.obs;
   final searchQuery = ''.obs;
+  final selectedContentType = 'all'.obs; // 🆕 TAMBAHAN BARU: Filter tipe konten
 
   // Available categories - Top 5 from database
   final availableCategories = <String>[].obs;
@@ -50,6 +51,7 @@ class NewsController extends GetxController {
     // Listen to search and filter changes
     ever(searchQuery, (_) => applyFilters());
     ever(selectedCategory, (_) => applyFilters());
+    ever(selectedContentType, (_) => applyFilters()); // 🆕 TAMBAHAN BARU
   }
 
   @override
@@ -172,7 +174,19 @@ class NewsController extends GetxController {
     }
   }
 
-  /// Apply filters to news list
+  /// 🆕 FUNGSI BARU: Cek tipe konten dari NewsModel
+  String _getContentType(NewsModel news) {
+    final hasVideo = news.videoUrl != null && news.videoUrl!.isNotEmpty;
+    final hasImage =
+        (news.bannerImage != null && news.bannerImage!.isNotEmpty) ||
+        (news.images.isNotEmpty && news.images.first.isNotEmpty);
+
+    if (hasVideo) return 'video';
+    if (hasImage) return 'photo';
+    return 'text';
+  }
+
+  /// Apply filters to news list - 🔄 DIUPDATE dengan filter content type
   void applyFilters() {
     print('Applying filters - Total news: ${newsList.length}');
     var filtered = newsList.toList();
@@ -195,8 +209,18 @@ class NewsController extends GetxController {
       }).toList();
     }
 
+    // 🆕 TAMBAHAN BARU: Apply content type filter
+    if (selectedContentType.value != 'all') {
+      print('Filtering by content type: ${selectedContentType.value}');
+      filtered = filtered.where((news) {
+        final contentType = _getContentType(news);
+        return contentType == selectedContentType.value;
+      }).toList();
+    }
+
     filteredNews.value = filtered;
     print('Filtered news count: ${filteredNews.length}');
+    print('Content type filter: ${selectedContentType.value}');
   }
 
   /// Select category filter
@@ -206,6 +230,12 @@ class NewsController extends GetxController {
     } else {
       selectedCategory.value = category;
     }
+  }
+
+  /// 🆕 FUNGSI BARU: Select content type filter
+  void selectContentType(String type) {
+    print('Selected content type: $type');
+    selectedContentType.value = type;
   }
 
   /// Update search query
@@ -357,65 +387,89 @@ class NewsController extends GetxController {
 
       print('Deleting news: ${news.id}');
 
-      // Delete images from Firebase Storage if any
+      // Track deletion results
+      List<String> deletionErrors = [];
+
+      // 1. Delete images from Firebase Storage if any
       if (news.images.isNotEmpty) {
         for (final imageUrl in news.images) {
           try {
             if (imageUrl.isNotEmpty && imageUrl.contains('firebase')) {
               final ref = _storage.refFromURL(imageUrl);
               await ref.delete();
-              print('Deleted image: $imageUrl');
+              print('✓ Deleted image: $imageUrl');
             }
           } catch (e) {
-            print('Error deleting image $imageUrl: $e');
-            // Continue even if image deletion fails
+            print('✗ Error deleting image $imageUrl: $e');
+            deletionErrors.add('Image: ${e.toString()}');
           }
         }
       }
 
-      // Delete banner image if exists
+      // 2. Delete banner image if exists
       if (news.bannerImage != null &&
           news.bannerImage!.isNotEmpty &&
           news.bannerImage!.contains('firebase')) {
         try {
           final ref = _storage.refFromURL(news.bannerImage!);
           await ref.delete();
-          print('Deleted banner image: ${news.bannerImage}');
+          print('✓ Deleted banner image: ${news.bannerImage}');
         } catch (e) {
-          print('Error deleting banner image: $e');
-          // Continue even if banner deletion fails
+          print('✗ Error deleting banner image: $e');
+          deletionErrors.add('Banner: ${e.toString()}');
         }
       }
 
-      // Delete video thumbnail if exists
+      // 3. Delete video file if exists (🆕 TAMBAHAN BARU)
+      if (news.videoUrl != null &&
+          news.videoUrl!.isNotEmpty &&
+          news.videoUrl!.contains('firebase')) {
+        try {
+          final ref = _storage.refFromURL(news.videoUrl!);
+          await ref.delete();
+          print('✓ Deleted video: ${news.videoUrl}');
+        } catch (e) {
+          print('✗ Error deleting video: $e');
+          deletionErrors.add('Video: ${e.toString()}');
+        }
+      }
+
+      // 4. Delete video thumbnail if exists
       if (news.videoThumbnail != null &&
           news.videoThumbnail!.isNotEmpty &&
           news.videoThumbnail!.contains('firebase')) {
         try {
           final ref = _storage.refFromURL(news.videoThumbnail!);
           await ref.delete();
-          print('Deleted video thumbnail: ${news.videoThumbnail}');
+          print('✓ Deleted video thumbnail: ${news.videoThumbnail}');
         } catch (e) {
-          print('Error deleting video thumbnail: $e');
-          // Continue even if thumbnail deletion fails
+          print('✗ Error deleting video thumbnail: $e');
+          deletionErrors.add('Thumbnail: ${e.toString()}');
         }
       }
 
-      // Delete news from Firebase Realtime Database
+      // 5. Delete news from Firebase Realtime Database
       await _database.child('news/${news.id}').remove();
-      print('Deleted news from database: ${news.id}');
+      print('✓ Deleted news from database: ${news.id}');
 
-      // Remove from local list
+      // 6. Remove from local list
       newsList.removeWhere((item) => item.id == news.id);
 
-      // Reapply filters to update UI
+      // 7. Reapply filters to update UI
       applyFilters();
 
       // Close loading dialog
       Get.back();
 
-      // Show success message
-      context.showSuccessSnackBar('Berita berhasil dihapus');
+      // Show success message with warning if there were storage errors
+      if (deletionErrors.isEmpty) {
+        context.showSuccessSnackBar('Berita berhasil dihapus');
+      } else {
+        context.showSuccessSnackBar(
+          'Berita dihapus, namun beberapa file gagal dihapus dari storage',
+        );
+        print('Storage deletion errors: ${deletionErrors.join(", ")}');
+      }
 
       // Refresh categories after delete
       await fetchCategories();
