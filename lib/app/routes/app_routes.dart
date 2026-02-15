@@ -28,6 +28,10 @@ abstract class Routes {
   static const MANAGE_KEPALA_DESA_HISTORY = _Paths.MANAGE_KEPALA_DESA_HISTORY;
   static const MANAGE_TIMELINE_SEJARAH = _Paths.MANAGE_TIMELINE_SEJARAH;
   static const PERTANIAN = _Paths.PERTANIAN;
+  static const KELOMPOK_FORM = _Paths.KELOMPOK_FORM;
+  static const KELOMPOK_DETAIL = _Paths.KELOMPOK_DETAIL;
+  static const ANGGOTA_FORM = _Paths.ANGGOTA_FORM;
+  static const MYPROFILE = _Paths.MYPROFILE;
 }
 
 abstract class _Paths {
@@ -59,4 +63,8 @@ abstract class _Paths {
   static const MANAGE_TIMELINE_SEJARAH =
       '/village-profile/manage-timeline-sejarah';
   static const PERTANIAN = '/pertanian';
+  static const KELOMPOK_FORM = '/kelompok-form';
+  static const KELOMPOK_DETAIL = '/kelompok-detail';
+  static const ANGGOTA_FORM = '/anggota-form';
+  static const MYPROFILE = '/myprofile';
 }

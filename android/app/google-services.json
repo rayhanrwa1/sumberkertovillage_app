@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "751589005070-tn5ucq6pqq9dntumapsi9hkil9j3p0g1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.sumberkerto_smart_village",
+            "certificate_hash": "e9a49eed4f880f7da538fe4d520ce6fe5f3ecdfa"
+          }
+        },
+        {
           "client_id": "751589005070-0286320bgcfgerv1d9v61h0grl6ie8fh.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -206,7 +206,7 @@ class HomeView extends GetView<HomeController> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Complete your profile first to ensure access to all features and services.',
+                                      'Lengkapi profil Anda terlebih dahulu untuk memastikan akses ke semua fitur dan layanan.',
                                       style: TGoogleTextStyleConst
                                           .inter14Regular
                                           .copyWith(
@@ -224,7 +224,7 @@ class HomeView extends GetView<HomeController> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            'Complete Profile',
+                                            'Lengkapi Profil',
                                             style: TGoogleTextStyleConst
                                                 .inter14SemiBold
                                                 .copyWith(
@@ -283,7 +283,7 @@ class HomeView extends GetView<HomeController> {
         'subtitle': 'Sejarah, visi-misi, dan data desa',
         'image': TAssetsConst.iconDesa, // Ganti dengan icon yang sesuai
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
-        'route': Routes.VILLAGE_PROFILE, // Route baru
+        'route': Routes.VILLAGE_PROFILE,
       },
       // {
       //   'title': 'Data Penduduk',
@@ -297,7 +297,7 @@ class HomeView extends GetView<HomeController> {
         'subtitle': 'Luas sawah, panen padi, pupuk',
         'image': TAssetsConst.iconPertanian,
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
-        'route': '', // Belum ada route
+        'route': Routes.PERTANIAN,
       },
     ];
 

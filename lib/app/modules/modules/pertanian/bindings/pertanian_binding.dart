@@ -5,8 +5,6 @@ import '../controllers/pertanian_controller.dart';
 class PertanianBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<PertanianController>(
-      () => PertanianController(),
-    );
+    Get.lazyPut<PertanianController>(() => PertanianController(), fenix: true);
   }
 }

@@ -5,6 +5,8 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:video_player/video_player.dart';
 import '../controllers/newsview_controller.dart';
 import 'fullscreen_video_player.dart';
+import '../../../../data/models/news_model.dart';
+import '../../controllers/news_controller.dart';
 
 class NewsviewView extends GetView<NewsviewController> {
   const NewsviewView({super.key});
@@ -44,19 +46,23 @@ class NewsviewView extends GetView<NewsviewController> {
               onPressed: () => Get.back(),
             ),
             actions: [
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    shape: BoxShape.circle,
+              // Menu titik 3 untuk edit dan hapus (hanya muncul jika user adalah pemilik berita)
+              if (_canEditNews())
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.more_vert,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
-                  child: const Icon(Icons.share, color: Colors.white, size: 20),
+                  onPressed: () => _showOptionsDialog(context),
                 ),
-                onPressed: () {
-                  // TODO: Implement share
-                },
-              ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: hasVideo
@@ -148,6 +154,264 @@ class NewsviewView extends GetView<NewsviewController> {
         ],
       ),
     );
+  }
+
+  // Cek apakah user bisa edit berita ini
+  bool _canEditNews() {
+    try {
+      final newsController = Get.find<NewsController>();
+      return newsController.canDeleteNews(controller.news);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Dialog options untuk edit dan hapus
+  void _showOptionsDialog(BuildContext context) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                children: [
+                  const Text(
+                    'Pilih Aksi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: Icon(Icons.close, color: Colors.grey[600]),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            InkWell(
+              onTap: () {
+                Get.back();
+                _editNews();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C3E50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.edit_outlined,
+                        color: Color(0xFF2C3E50),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Text(
+                      'Edit Berita',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF2C3E50),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                Get.back();
+                _showDeleteConfirmation(context);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Text(
+                      'Hapus Berita',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Edit news
+  void _editNews() {
+    try {
+      final newsController = Get.find<NewsController>();
+      newsController.editNews(controller.news);
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Gagal membuka halaman edit',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Dialog konfirmasi hapus
+  void _showDeleteConfirmation(BuildContext context) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Hapus Berita',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2C3E50),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Apakah Anda yakin ingin menghapus berita "${controller.news.title}"? Tindakan ini tidak dapat dibatalkan.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Get.back(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Batal',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                        _deleteNews(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Hapus',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Delete news
+  void _deleteNews(BuildContext context) async {
+    try {
+      final newsController = Get.find<NewsController>();
+      await newsController.deleteNews(controller.news, context);
+      // Kembali ke halaman news list setelah delete
+      Get.back();
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Gagal menghapus berita',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   // Video Player with Fullscreen Button
@@ -284,6 +548,7 @@ class NewsviewView extends GetView<NewsviewController> {
                           // Fullscreen button
                           IconButton(
                             icon: const Icon(Icons.fullscreen),
+                            color: Colors.white,
                             onPressed: () async {
                               await controller.enterFullscreen();
                             },
@@ -551,12 +816,12 @@ class NewsviewView extends GetView<NewsviewController> {
             '${controller.news.viewCount}',
             'Dilihat',
           ),
-          Container(width: 1, height: 30, color: Colors.grey[300]),
-          _buildStatItem(
-            Icons.favorite_outline,
-            '${controller.news.likeCount}',
-            'Suka',
-          ),
+          // Container(width: 1, height: 30, color: Colors.grey[300]),
+          // _buildStatItem(
+          //   Icons.favorite_outline,
+          //   '${controller.news.likeCount}',
+          //   'Suka',
+          // ),
         ],
       ),
     );

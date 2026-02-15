@@ -30,7 +30,7 @@ class NewsController extends GetxController {
   // Filter options
   final selectedCategory = ''.obs;
   final searchQuery = ''.obs;
-  final selectedContentType = 'all'.obs; // 🆕 TAMBAHAN BARU: Filter tipe konten
+  final selectedContentType = 'all'.obs; 
 
   // Available categories - Top 5 from database
   final availableCategories = <String>[].obs;
@@ -64,6 +64,9 @@ class NewsController extends GetxController {
   String? get _currentUserId {
     return _storage2.read('userId') ?? _auth.currentUser?.uid;
   }
+
+  /// 🆕 Public getter for current user ID (digunakan di UI)
+  String? get currentUserId => _currentUserId;
 
   /// Fetch top 5 categories from database
   Future<void> fetchCategories() async {
@@ -232,15 +235,62 @@ class NewsController extends GetxController {
     }
   }
 
-  /// 🆕 FUNGSI BARU: Select content type filter
   void selectContentType(String type) {
     print('Selected content type: $type');
     selectedContentType.value = type;
   }
 
-  /// Update search query
   void updateSearch(String query) {
     searchQuery.value = query;
+  }
+
+  // Cache untuk menyimpan creator photos
+  final Map<String, String> _creatorPhotos = {};
+
+  /// Fetch creator photo dari database
+  Future<String?> getCreatorPhoto(String userId) async {
+    // Return dari cache jika ada
+    if (_creatorPhotos.containsKey(userId)) {
+      return _creatorPhotos[userId];
+    }
+
+    try {
+      final snapshot = await _database
+          .child('profile/$userId/photo_profile')
+          .get();
+
+      if (snapshot.exists) {
+        final photoUrl = snapshot.value as String?;
+        if (photoUrl != null && photoUrl.isNotEmpty) {
+          _creatorPhotos[userId] = photoUrl;
+          return photoUrl;
+        }
+      }
+    } catch (e) {
+      print('Error fetching creator photo for $userId: $e');
+    }
+
+    return null;
+  }
+
+  /// Fetch creator name dari database
+  Future<String> getCreatorName(String userId) async {
+    try {
+      final snapshot = await _database.child('profile/$userId/name').get();
+
+      if (snapshot.exists) {
+        return snapshot.value as String? ?? 'Anonymous';
+      }
+    } catch (e) {
+      print('Error fetching creator name for $userId: $e');
+    }
+
+    return 'Anonymous';
+  }
+
+  /// Clear creator cache (panggil saat refresh)
+  void clearCreatorCache() {
+    _creatorPhotos.clear();
   }
 
   /// Increment view count
