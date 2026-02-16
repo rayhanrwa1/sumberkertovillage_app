@@ -1,93 +1,125 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:sumberkerto_smart_village/app/common/buttons.dart';
+import 'package:sumberkerto_smart_village/app/common/spaces.dart';
+import 'package:sumberkerto_smart_village/app/common/text_fields.dart';
+import 'package:sumberkerto_smart_village/app/core/const/color_const.dart';
+import 'package:sumberkerto_smart_village/app/core/const/google_text_style_const.dart';
 import 'package:sumberkerto_smart_village/app/modules/modules/pertanian/controllers/pertanian_controller.dart';
 
-class KelompokFormView extends GetView<PertanianController> {
-  const KelompokFormView({super.key});
+class KelompokFormViewImproved extends GetView<PertanianController> {
+  const KelompokFormViewImproved({super.key});
 
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic>? kelompok =
         Get.arguments as Map<String, dynamic>?;
+    final isEdit = kelompok != null && kelompok.isNotEmpty;
 
-    final isEdit = kelompok != null;
+    // Initialize form
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (isEdit) {
+        controller.populateKelompokForm(kelompok);
+      } else {
+        controller.clearKelompokForm();
+        // Set default values
+        if (controller.subsektorOptions.isNotEmpty &&
+            controller.subsektorController.text.isEmpty) {
+          controller.subsektorController.text =
+              controller.subsektorOptions.first;
+          controller.updateKomoditasOptions(controller.subsektorOptions.first);
+        }
+      }
+    });
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: TColorsConst.neutral50,
       appBar: AppBar(
-        title: Text(isEdit ? 'Edit Kelompok Tani' : 'Tambah Kelompok Tani'),
+        title: Text(
+          isEdit ? 'Edit Kelompok Tani' : 'Tambah Kelompok Tani',
+          style: TGoogleTextStyleConst.inter18SemiBold.copyWith(
+            color: TColorsConst.white,
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: const Color.fromARGB(255, 63, 150, 255),
+        iconTheme: const IconThemeData(color: TColorsConst.white),
       ),
       body: Form(
         key: controller.formKeyKelompok,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.w),
           children: [
+            // Informasi Kelompok
             _buildSectionCard(
               title: 'Informasi Kelompok',
-              icon: Icons.info_outline,
               children: [
-                _buildTextField(
+                TTextFields.buildStandard(
                   controller: controller.kodeKelompokController,
-                  label: 'Kode Kelompok',
-                  hint: 'Contoh: 889860',
-                  icon: Icons.tag,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Kode kelompok harus diisi';
-                    }
-                    return null;
-                  },
+                  hintText: 'Contoh: 889860',
+                  keyboardType: TextInputType.number,
                 ),
-                const SizedBox(height: 16),
-                _buildTextField(
+                TSpaces.v12(),
+
+                TTextFields.buildStandard(
                   controller: controller.namaKelompokController,
-                  label: 'Nama Kelompok',
-                  hint: 'Contoh: KARYO UTOMO III',
-                  icon: Icons.group,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Nama kelompok harus diisi';
-                    }
-                    return null;
-                  },
+                  hintText: 'Contoh: KARYO UTOMO III',
+                  textCapitalization: TextCapitalization.characters,
                 ),
-                const SizedBox(height: 16),
-                _buildTextField(
+                TSpaces.v12(),
+
+                TTextFields.buildStandard(
                   controller: controller.ketuaKelompokController,
-                  label: 'Nama Ketua',
-                  hint: 'Nama ketua kelompok',
-                  icon: Icons.person,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Nama ketua harus diisi';
-                    }
-                    return null;
-                  },
+                  hintText: 'Nama ketua kelompok',
+                  textCapitalization: TextCapitalization.words,
                 ),
-                const SizedBox(height: 16),
-                _buildTextField(
+                TSpaces.v12(),
+
+                TTextFields.buildStandard(
                   controller: controller.penyuluhController,
-                  label: 'Penyuluh Pendamping',
-                  hint: 'Nama penyuluh',
-                  icon: Icons.school,
+                  hintText: 'Nama penyuluh pendamping',
+                  textCapitalization: TextCapitalization.words,
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            TSpaces.v16(),
+
+            // Lokasi
+            _buildSectionCard(
+              title: 'Lokasi',
+              children: [
+                TTextFields.buildStandard(
+                  controller: controller.alamatController,
+                  hintText: 'Alamat lengkap kelompok',
+                  textCapitalization: TextCapitalization.words,
+                  maxLines: 2,
+                ),
+                TSpaces.v12(),
+
+                TTextFields.buildStandard(
+                  controller: controller.kecamatanController,
+                  hintText: 'Nama kecamatan',
+                  textCapitalization: TextCapitalization.words,
+                ),
+              ],
+            ),
+            TSpaces.v16(),
+            // Subsektor & Komoditas
             _buildSectionCard(
               title: 'Subsektor & Komoditas',
-              icon: Icons.agriculture,
               children: [
                 Obx(
-                  () => _buildDropdownField(
+                  () => TTextFields.buildDropDown<String>(
+                    context: context,
                     label: 'Subsektor',
-                    value: controller.subsektorController.text.isEmpty
+                    hintText: 'Pilih subsektor',
+                    items: controller.subsektorOptions,
+                    itemLabel: (item) => item,
+                    selectedValue: controller.subsektorController.text.isEmpty
                         ? null
                         : controller.subsektorController.text,
-                    items: controller.subsektorOptions,
-                    icon: Icons.category,
                     onChanged: (value) {
                       if (value != null) {
                         controller.subsektorController.text = value;
@@ -95,106 +127,105 @@ class KelompokFormView extends GetView<PertanianController> {
                       }
                     },
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
+                      if (value == null) {
                         return 'Subsektor harus dipilih';
                       }
                       return null;
                     },
+                    // UBAH WARNA INI MENJADI PUTIH
+                    borderColor:
+                        TColorsConst.neutral200, // atau Colors.grey[300]
+                    focusedBorderColor: const Color.fromARGB(
+                      255,
+                      255,
+                      255,
+                      255,
+                    ), // atau warna biru yang sesuai
                   ),
                 ),
-                const SizedBox(height: 16),
+                TSpaces.v12(),
+
                 Obx(
-                  () => _buildDropdownField(
+                  () => TTextFields.buildDropDown<String>(
+                    context: context,
                     label: 'Komoditas',
-                    value: controller.komoditasController.text.isEmpty
+                    hintText: 'Pilih komoditas',
+                    items: controller.komoditasOptions,
+                    itemLabel: (item) => item,
+                    selectedValue: controller.komoditasController.text.isEmpty
                         ? null
                         : controller.komoditasController.text,
-                    items: controller.komoditasOptions,
-                    icon: Icons.grass,
                     onChanged: (value) {
                       if (value != null) {
                         controller.komoditasController.text = value;
                       }
                     },
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
+                      if (value == null) {
                         return 'Komoditas harus dipilih';
                       }
                       return null;
                     },
+                    // UBAH WARNA INI MENJADI PUTIH
+                    borderColor: TColorsConst.neutral200,
+                    focusedBorderColor: const Color.fromARGB(
+                      255,
+                      255,
+                      255,
+                      255,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            TSpaces.v16(),
+
+            // Informasi Tambahan
             _buildSectionCard(
               title: 'Informasi Tambahan',
-              icon: Icons.more_horiz,
               children: [
-                _buildTextField(
+                TTextFields.buildStandard(
                   controller: controller.kiosPupukController,
-                  label: 'Kios Pupuk',
-                  hint: 'Contoh: VINKA, KIOS',
-                  icon: Icons.store,
+                  hintText: 'Contoh: VINKA, KIOS',
+                  textCapitalization: TextCapitalization.characters,
                 ),
-                const SizedBox(height: 16),
-                _buildTextField(
+                TSpaces.v12(),
+
+                TTextFields.buildStandard(
                   controller: controller.tahunRdkkController,
-                  label: 'Tahun RDKK',
-                  hint: 'Contoh: 2026',
-                  icon: Icons.calendar_today,
+                  hintText: 'Contoh: 2026',
                   keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Tahun RDKK harus diisi';
-                    }
-                    return null;
-                  },
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            TSpaces.v24(),
+
+            // Submit Button
             Obx(
-              () => ElevatedButton(
+              () => TButtons.primary(
                 onPressed: controller.isLoading.value
                     ? null
                     : () {
-                        if (isEdit) {
-                          controller.updateKelompokTani(
-                            kelompok['id'],
-                            context,
-                          );
-                        } else {
-                          controller.createKelompokTani(context);
+                        if (controller.formKeyKelompok.currentState!
+                            .validate()) {
+                          if (isEdit) {
+                            controller.updateKelompokTani(
+                              kelompok['id'],
+                              context,
+                            );
+                          } else {
+                            controller.createKelompokTani(context);
+                          }
                         }
                       },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: controller.isLoading.value
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        isEdit ? 'Perbarui Kelompok' : 'Simpan Kelompok',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                text: controller.isLoading.value
+                    ? 'Memproses...'
+                    : (isEdit ? 'Perbarui Kelompok' : 'Simpan Kelompok'),
+                backgroundColor: TColorsConst.blue500,
+                height: 48.h,
               ),
             ),
-            const SizedBox(height: 16),
+            TSpaces.v16(),
           ],
         ),
       ),
@@ -203,122 +234,33 @@ class KelompokFormView extends GetView<PertanianController> {
 
   Widget _buildSectionCard({
     required String title,
-    required IconData icon,
     required List<Widget> children,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: TColorsConst.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: TColorsConst.neutral200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green[50],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+          Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Text(
+              title,
+              style: TGoogleTextStyleConst.inter16Bold.copyWith(
+                color: TColorsConst.neutral800,
               ),
             ),
-            child: Row(
-              children: [
-                Icon(icon, color: Colors.green[700], size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green[700],
-                  ),
-                ),
-              ],
-            ),
           ),
+          Divider(height: 1.h, color: const Color.fromARGB(255, 255, 255, 255)),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             child: Column(children: children),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.green[700]!, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-      validator: validator,
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required String? value,
-    required RxList<String> items,
-    required IconData icon,
-    required void Function(String?) onChanged,
-    String? Function(String?)? validator,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.green[700]!, width: 2),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-      items: items
-          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-          .toList(),
-      onChanged: onChanged,
-      validator: validator,
     );
   }
 }

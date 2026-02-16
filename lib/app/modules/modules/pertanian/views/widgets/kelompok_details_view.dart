@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:sumberkerto_smart_village/app/common/spaces.dart';
+import 'package:sumberkerto_smart_village/app/core/const/color_const.dart';
+import 'package:sumberkerto_smart_village/app/core/const/google_text_style_const.dart';
 import 'package:sumberkerto_smart_village/app/modules/modules/pertanian/controllers/pertanian_controller.dart';
 import 'package:sumberkerto_smart_village/app/routes/app_pages.dart';
 
@@ -11,26 +15,32 @@ class KelompokDetailView extends GetView<PertanianController> {
     final kelompok = Get.arguments as Map<String, dynamic>;
     final kelompokId = kelompok['id'];
 
-    // Load anggota when view opens
-    controller.loadAnggota(kelompokId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.loadAnggota(kelompokId);
+    });
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text(kelompok['nama_kelompok'] ?? 'Detail Kelompok'),
+        title: Text(
+          kelompok['nama_kelompok'] ?? 'Detail Kelompok',
+          style: TGoogleTextStyleConst.inter16SemiBold.copyWith(
+            color: const Color(0xFF1F2937),
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Color(0xFF1F2937)),
       ),
       body: RefreshIndicator(
         onRefresh: () => controller.loadAnggota(kelompokId),
+        color: const Color(0xFF60A5FA),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.w),
           children: [
-            // Kelompok Info Card
             _buildKelompokInfoCard(kelompok),
-            const SizedBox(height: 16),
-
-            // Anggota Section
+            TSpaces.v16(),
             _buildAnggotaSection(kelompokId, context),
           ],
         ),
@@ -39,9 +49,15 @@ class KelompokDetailView extends GetView<PertanianController> {
         if (!controller.isAdmin.value) return const SizedBox.shrink();
         return FloatingActionButton.extended(
           onPressed: () => _showAnggotaForm(context, kelompokId),
-          icon: const Icon(Icons.person_add),
-          label: const Text('Tambah Anggota'),
-          backgroundColor: Colors.green[700],
+          icon: const Icon(Icons.person_add, color: Colors.white),
+          label: Text(
+            'Tambah Anggota',
+            style: TGoogleTextStyleConst.inter14Medium.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: const Color(0xFF60A5FA),
+          elevation: 2,
         );
       }),
     );
@@ -51,61 +67,53 @@ class KelompokDetailView extends GetView<PertanianController> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(14.w),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green[700]!, Colors.green[500]!],
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(8.r),
+                topRight: Radius.circular(8.r),
               ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+              border: Border(
+                bottom: BorderSide(color: const Color(0xFFE5E7EB)),
               ),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(6.r),
                   ),
-                  child: const Icon(
-                    Icons.agriculture,
-                    color: Colors.white,
-                    size: 32,
+                  child: Icon(
+                    Icons.agriculture_rounded,
+                    color: const Color(0xFF60A5FA),
+                    size: 20.sp,
                   ),
                 ),
-                const SizedBox(width: 16),
+                TSpaces.h12(),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         kelompok['nama_kelompok'] ?? '-',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                        style: TGoogleTextStyleConst.inter14Bold.copyWith(
+                          color: const Color(0xFF1F2937),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      TSpaces.v4(),
                       Text(
                         'Kode: ${kelompok['kode_kelompok'] ?? '-'}',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 14,
+                        style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                          color: const Color(0xFF6B7280),
                         ),
                       ),
                     ],
@@ -115,41 +123,44 @@ class KelompokDetailView extends GetView<PertanianController> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(14.w),
             child: Column(
               children: [
                 _buildInfoRow(
-                  Icons.person,
+                  Icons.person_outline,
                   'Ketua',
                   kelompok['ketua_kelompok'] ?? '-',
                 ),
-                const Divider(height: 24),
+                Divider(height: 16.h, color: const Color(0xFFE5E7EB)),
                 _buildInfoRow(
-                  Icons.school,
+                  Icons.school_outlined,
                   'Penyuluh',
                   kelompok['penyuluh_pendamping'] ?? '-',
                 ),
-                const Divider(height: 24),
+                Divider(height: 16.h, color: const Color(0xFFE5E7EB)),
                 _buildInfoRow(
-                  Icons.category,
+                  Icons.category_outlined,
                   'Subsektor',
                   kelompok['subsektor'] ?? '-',
                 ),
-                const Divider(height: 24),
+                Divider(height: 16.h, color: const Color(0xFFE5E7EB)),
                 _buildInfoRow(
-                  Icons.grass,
+                  Icons.eco_outlined,
                   'Komoditas',
                   kelompok['komoditas'] ?? '-',
                 ),
-                const Divider(height: 24),
+                if (kelompok['kios_pupuk'] != null &&
+                    kelompok['kios_pupuk'].toString().isNotEmpty) ...[
+                  Divider(height: 16.h, color: const Color(0xFFE5E7EB)),
+                  _buildInfoRow(
+                    Icons.store_outlined,
+                    'Kios Pupuk',
+                    kelompok['kios_pupuk'],
+                  ),
+                ],
+                Divider(height: 16.h, color: const Color(0xFFE5E7EB)),
                 _buildInfoRow(
-                  Icons.store,
-                  'Kios Pupuk',
-                  kelompok['kios_pupuk'] ?? '-',
-                ),
-                const Divider(height: 24),
-                _buildInfoRow(
-                  Icons.calendar_today,
+                  Icons.calendar_today_outlined,
                   'Tahun RDKK',
                   kelompok['tahun_rdkk'] ?? '-',
                 ),
@@ -164,22 +175,23 @@ class KelompokDetailView extends GetView<PertanianController> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 12),
+        Icon(icon, size: 16.sp, color: const Color(0xFF9CA3AF)),
+        TSpaces.h12(),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                  color: const Color(0xFF9CA3AF),
+                ),
               ),
-              const SizedBox(height: 2),
+              TSpaces.v4(),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+                style: TGoogleTextStyleConst.inter12Medium.copyWith(
+                  color: const Color(0xFF1F2937),
                 ),
               ),
             ],
@@ -196,39 +208,39 @@ class KelompokDetailView extends GetView<PertanianController> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Daftar Anggota',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+                color: const Color(0xFF1F2937),
+              ),
             ),
             Obx(
               () => Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(20),
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(4.r),
                 ),
                 child: Text(
                   '${controller.anggotaList.length} Anggota',
-                  style: TextStyle(
-                    color: Colors.blue[700],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                  style: TGoogleTextStyleConst.inter12Medium.copyWith(
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        TSpaces.v12(),
         Obx(() {
           if (controller.isLoading.value) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
-                child: CircularProgressIndicator(),
+                padding: EdgeInsets.all(32.w),
+                child: const CircularProgressIndicator(
+                  color: Color(0xFF60A5FA),
+                  strokeWidth: 2,
+                ),
               ),
             );
           }
@@ -259,74 +271,103 @@ class KelompokDetailView extends GetView<PertanianController> {
   ) {
     final pupuk = anggota['kebutuhan_pupuk'];
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.green[100],
-            child: Text(
-              '$number',
-              style: TextStyle(
-                color: Colors.green[700],
-                fontWeight: FontWeight.bold,
+          tilePadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+          childrenPadding: EdgeInsets.zero,
+          leading: Container(
+            width: 32.w,
+            height: 32.w,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(6.r),
+            ),
+            child: Center(
+              child: Text(
+                '$number',
+                style: TGoogleTextStyleConst.inter12SemiBold.copyWith(
+                  color: const Color(0xFF60A5FA),
+                ),
               ),
             ),
           ),
           title: Text(
             anggota['nama'] ?? '-',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+              color: const Color(0xFF1F2937),
+            ),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 4),
-              Text('NIK: ${anggota['nik'] ?? '-'}'),
+              TSpaces.v8(),
+              Text(
+                'NIK: ${anggota['nik'] ?? '-'}',
+                style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                  color: const Color(0xFF9CA3AF),
+                ),
+              ),
               Text(
                 'Luas: ${anggota['rencana_tanam_ha']?.toString() ?? '0'} Ha',
+                style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                  color: const Color(0xFF9CA3AF),
+                ),
               ),
             ],
           ),
           trailing: Obx(() {
             if (!controller.isAdmin.value) {
-              return const Icon(Icons.keyboard_arrow_down);
+              return Icon(
+                Icons.keyboard_arrow_down,
+                color: const Color(0xFF9CA3AF),
+              );
             }
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
+                  icon: Icon(Icons.edit_outlined, size: 18.sp),
                   onPressed: () =>
                       _showAnggotaForm(context, kelompokId, anggota: anggota),
-                  color: Colors.blue[700],
+                  color: const Color(0xFF60A5FA),
+                  padding: EdgeInsets.all(4.w),
+                  constraints: const BoxConstraints(),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, size: 20),
+                  icon: Icon(Icons.delete_outline, size: 18.sp),
                   onPressed: () =>
                       _confirmDeleteAnggota(context, kelompokId, anggota),
-                  color: Colors.red,
+                  color: const Color(0xFFEF4444),
+                  padding: EdgeInsets.all(4.w),
+                  constraints: const BoxConstraints(),
                 ),
               ],
             );
           }),
           children: [
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(16),
+            Container(
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: const Color(0xFFE5E7EB))),
+              ),
+              padding: EdgeInsets.all(14.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Kebutuhan Pupuk Bersubsidi (Kg)',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+                      color: const Color(0xFF1F2937),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  TSpaces.v10(),
                   if (pupuk != null) ...[
                     _buildPupukRow('UREA', pupuk['urea']),
                     _buildPupukRow('NPK', pupuk['npk']),
@@ -334,7 +375,12 @@ class KelompokDetailView extends GetView<PertanianController> {
                     _buildPupukRow('Organik', pupuk['organik']),
                     _buildPupukRow('ZA', pupuk['za']),
                   ] else
-                    const Text('Belum ada data pupuk'),
+                    Text(
+                      'Belum ada data pupuk',
+                      style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                        color: const Color(0xFF9CA3AF),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -347,69 +393,103 @@ class KelompokDetailView extends GetView<PertanianController> {
   Widget _buildPupukRow(String jenis, dynamic data) {
     if (data == null) return const SizedBox.shrink();
 
-    final mt1 = data['mt1'] ?? 0;
-    final mt2 = data['mt2'] ?? 0;
-    final mt3 = data['mt3'] ?? 0;
-    final total = data['total'] ?? 0;
+    final mt1 = data['MT1'] ?? 0;
+    final mt2 = data['MT2'] ?? 0;
+    final mt3 = data['MT3'] ?? 0;
+    final total = mt1 + mt2 + mt3;
 
     if (total == 0) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Container(
+        padding: EdgeInsets.all(10.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(6.r),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
               jenis,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: TGoogleTextStyleConst.inter12SemiBold.copyWith(
+                color: const Color(0xFF1F2937),
+              ),
             ),
-          ),
-          Expanded(
-            child: Text('MT1: $mt1', style: const TextStyle(fontSize: 12)),
-          ),
-          Expanded(
-            child: Text('MT2: $mt2', style: const TextStyle(fontSize: 12)),
-          ),
-          Expanded(
-            child: Text('MT3: $mt3', style: const TextStyle(fontSize: 12)),
-          ),
-          Expanded(
-            child: Text(
-              'Total: $total',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            TSpaces.v8(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'MT1: $mt1',
+                  style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+                Text(
+                  'MT2: $mt2',
+                  style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+                Text(
+                  'MT3: $mt3',
+                  style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF60A5FA),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  child: Text(
+                    'Total: $total',
+                    style: TGoogleTextStyleConst.inter12SemiBold.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyAnggota() {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(40.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
+            Icon(
+              Icons.people_outline,
+              size: 48.sp,
+              color: const Color(0xFFD1D5DB),
+            ),
+            TSpaces.v12(),
             Text(
               'Belum ada anggota',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+              style: TGoogleTextStyleConst.inter12Medium.copyWith(
+                color: const Color(0xFF6B7280),
               ),
             ),
-            const SizedBox(height: 8),
+            TSpaces.v8(),
             Text(
               'Tambahkan anggota kelompok tani',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                color: const Color(0xFF9CA3AF),
+              ),
             ),
           ],
         ),
@@ -428,7 +508,6 @@ class KelompokDetailView extends GetView<PertanianController> {
       controller.clearAnggotaForm();
     }
 
-    // Use Routes constant
     Get.toNamed(
       Routes.ANGGOTA_FORM,
       arguments: {'kelompokId': kelompokId, 'anggota': anggota},
@@ -442,22 +521,45 @@ class KelompokDetailView extends GetView<PertanianController> {
   ) {
     Get.dialog(
       AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        backgroundColor: Colors.white,
+        title: Text(
+          'Konfirmasi Hapus',
+          style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+            color: const Color(0xFF1F2937),
+          ),
+        ),
         content: Text(
           'Apakah Anda yakin ingin menghapus anggota "${anggota['nama']}"?',
+          style: TGoogleTextStyleConst.inter14Regular.copyWith(
+            color: const Color(0xFF6B7280),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Batal',
+              style: TGoogleTextStyleConst.inter14Medium.copyWith(
+                color: const Color(0xFF6B7280),
+              ),
+            ),
+          ),
           ElevatedButton(
             onPressed: () {
               Get.back();
               controller.deleteAnggota(kelompokId, anggota['id']);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6.r),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
             ),
-            child: const Text('Hapus'),
+            child: Text('Hapus', style: TGoogleTextStyleConst.inter14Medium),
           ),
         ],
       ),

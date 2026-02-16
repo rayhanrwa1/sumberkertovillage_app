@@ -176,14 +176,20 @@ class AppPages {
       page: () => const PertanianView(),
       binding: PertanianBinding(),
     ),
-    GetPage(name: _Paths.KELOMPOK_FORM, page: () => const KelompokFormView()),
+    GetPage(
+      name: _Paths.KELOMPOK_FORM,
+      page: () => const KelompokFormViewImproved(),
+    ),
 
     GetPage(
       name: _Paths.KELOMPOK_DETAIL,
       page: () => const KelompokDetailView(),
     ),
 
-    GetPage(name: _Paths.ANGGOTA_FORM, page: () => const AnggotaFormView()),
+    GetPage(
+      name: _Paths.ANGGOTA_FORM,
+      page: () => const AnggotaFormView(),
+    ),
 
     GetPage(
       name: _Paths.MYPROFILE,

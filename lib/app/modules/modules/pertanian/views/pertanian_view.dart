@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:sumberkerto_smart_village/app/common/spaces.dart';
+import 'package:sumberkerto_smart_village/app/core/const/color_const.dart';
+import 'package:sumberkerto_smart_village/app/core/const/google_text_style_const.dart';
 import 'package:sumberkerto_smart_village/app/modules/modules/pertanian/controllers/pertanian_controller.dart';
 import 'package:sumberkerto_smart_village/app/routes/app_pages.dart';
 
@@ -9,52 +13,164 @@ class PertanianView extends GetView<PertanianController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text('Kelompok Tani'),
+        title: Text(
+          'Kelompok Tani',
+          style: TGoogleTextStyleConst.inter16SemiBold.copyWith(
+            color: const Color(0xFF1F2937),
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Color(0xFF1F2937)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Color(0xFF6B7280)),
             onPressed: () => controller.refreshData(),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () => controller.refreshData(),
+        color: const Color(0xFF60A5FA),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.w),
           children: [
-            // Statistik Cards
-            _buildStatistikSection(),
-            const SizedBox(height: 16),
+            // Header Info Card
+            _buildHeaderCard(),
+            TSpaces.v16(),
 
-            // Kelompok Tani List
+            // Statistics Section
+            _buildStatistikSection(),
+            TSpaces.v20(),
+
+            // Filter Tabs
+            _buildFilterTabs(),
+            TSpaces.v16(),
+
+            // Search Bar
+            _buildSearchBar(),
+            TSpaces.v16(),
+
+            // Kelompok List
             _buildKelompokSection(context),
           ],
         ),
       ),
       floatingActionButton: Obx(() {
         if (!controller.isAdmin.value) return const SizedBox.shrink();
-
         return FloatingActionButton.extended(
           onPressed: () => _showKelompokForm(context),
-          icon: const Icon(
-            Icons.add,
-            color: Colors.blue, // icon biru
-          ),
-          label: const Text(
+          backgroundColor: const Color(0xFF60A5FA),
+          elevation: 2,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: Text(
             'Tambah Kelompok',
-            style: TextStyle(
-              color: Colors.blue, // text biru
-              fontWeight: FontWeight.bold,
+            style: TGoogleTextStyleConst.inter14Medium.copyWith(
+              color: Colors.white,
             ),
           ),
-          backgroundColor: Colors.white, // bg putih
-          elevation: 4,
         );
       }),
+    );
+  }
+
+  Widget _buildHeaderCard() {
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(6.r),
+            ),
+            child: Icon(
+              Icons.agriculture_rounded,
+              color: const Color(0xFF60A5FA),
+              size: 24.sp,
+            ),
+          ),
+          TSpaces.h12(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Data Pertanian',
+                  style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+                    color: const Color(0xFF1F2937),
+                  ),
+                ),
+                TSpaces.v4(),
+                Obx(
+                  () => Text(
+                    'Musim Tanam: ${controller.currentMusimTanam.value}',
+                    style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterTabs() {
+    final filters = ['Semua', 'Perkebunan', 'Tanaman Pangan', 'Hortikultura'];
+
+    return SizedBox(
+      height: 36.h,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: filters.length,
+        separatorBuilder: (_, __) => TSpaces.h8(),
+        itemBuilder: (context, index) {
+          final filter = filters[index];
+          return Obx(
+            () => _buildFilterChip(
+              filter,
+              controller.selectedFilter.value == filter,
+              () => controller.setFilter(filter),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF60A5FA) : Colors.white,
+          borderRadius: BorderRadius.circular(6.r),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF60A5FA)
+                : const Color(0xFFE5E7EB),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TGoogleTextStyleConst.inter12Medium.copyWith(
+            color: isSelected ? Colors.white : const Color(0xFF6B7280),
+          ),
+        ),
+      ),
     );
   }
 
@@ -64,181 +180,175 @@ class PertanianView extends GetView<PertanianController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Statistik',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            'Ringkasan Data',
+            style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+              color: const Color(0xFF1F2937),
+            ),
           ),
-          const SizedBox(height: 12),
+          TSpaces.v12(),
           Row(
             children: [
               Expanded(
                 child: _buildStatCard(
                   'Total Kelompok',
                   '${stats['total_kelompok'] ?? 0}',
-                  Icons.groups,
-                  Colors.blue,
+                  Icons.groups_rounded,
                 ),
               ),
-              const SizedBox(width: 12),
+              TSpaces.h12(),
               Expanded(
                 child: _buildStatCard(
-                  'Total Anggota',
+                  'Total Petani',
                   '${stats['total_anggota'] ?? 0}',
-                  Icons.people,
-                  Colors.green,
+                  Icons.people_rounded,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Luas Tanam',
-                  '${stats['total_luas_tanam']?.toStringAsFixed(2) ?? '0'} Ha',
-                  Icons.landscape,
-                  Colors.orange,
-                ),
-              ),
-            ],
+          TSpaces.v12(),
+          _buildStatCard(
+            'Total Luas Tanam',
+            '${stats['total_luas_tanam']?.toStringAsFixed(2) ?? '0.00'} Ha',
+            Icons.landscape_rounded,
           ),
-          const SizedBox(height: 12),
-          _buildPupukStatCard(stats['total_kebutuhan_pupuk']),
+          TSpaces.v12(),
+          _buildPupukCard(stats['total_kebutuhan_pupuk']),
         ],
       );
     });
   }
 
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildStatCard(String title, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const Spacer(),
-            ],
+          Icon(icon, color: const Color(0xFF60A5FA), size: 20.sp),
+          TSpaces.v10(),
+          Text(
+            title,
+            style: TGoogleTextStyleConst.inter12Regular.copyWith(
+              color: const Color(0xFF6B7280),
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          const SizedBox(height: 4),
+          TSpaces.v4(),
           Text(
             value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TGoogleTextStyleConst.inter16SemiBold.copyWith(
+              color: const Color(0xFF1F2937),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPupukStatCard(dynamic pupuk) {
+  Widget _buildPupukCard(dynamic pupuk) {
     if (pupuk == null) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.grass, color: Colors.green, size: 20),
+              Icon(
+                Icons.grass_rounded,
+                color: const Color(0xFF60A5FA),
+                size: 18.sp,
               ),
-              const SizedBox(width: 12),
-              const Text(
+              TSpaces.h8(),
+              Text(
                 'Total Kebutuhan Pupuk (Kg)',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+                  color: const Color(0xFF1F2937),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildPupukRow('UREA', pupuk['urea'] ?? 0, Colors.blue),
-          const SizedBox(height: 8),
-          _buildPupukRow('NPK', pupuk['npk'] ?? 0, Colors.orange),
-          const SizedBox(height: 8),
-          _buildPupukRow(
-            'NPK Formula',
-            pupuk['npk_formula'] ?? 0,
-            Colors.purple,
-          ),
-          const SizedBox(height: 8),
-          _buildPupukRow('Organik', pupuk['organik'] ?? 0, Colors.green),
-          const SizedBox(height: 8),
-          _buildPupukRow('ZA', pupuk['za'] ?? 0, Colors.teal),
+          TSpaces.v12(),
+          _buildPupukRow('UREA', pupuk['urea'] ?? 0),
+          TSpaces.v8(),
+          _buildPupukRow('NPK', pupuk['npk'] ?? 0),
+          TSpaces.v8(),
+          _buildPupukRow('NPK Formula', pupuk['npk_formula'] ?? 0),
+          TSpaces.v8(),
+          _buildPupukRow('Organik', pupuk['organik'] ?? 0),
+          TSpaces.v8(),
+          _buildPupukRow('ZA', pupuk['za'] ?? 0),
         ],
       ),
     );
   }
 
-  Widget _buildPupukRow(String jenis, int total, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 16,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(2),
-              ),
+  Widget _buildPupukRow(String jenis, int total) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            jenis,
+            style: TGoogleTextStyleConst.inter12Regular.copyWith(
+              color: const Color(0xFF4B5563),
             ),
-            const SizedBox(width: 8),
-            Text(jenis, style: const TextStyle(fontSize: 13)),
-          ],
-        ),
-        Text(
-          '$total Kg',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: color,
           ),
-        ),
-      ],
+          Text(
+            '$total Kg',
+            style: TGoogleTextStyleConst.inter12SemiBold.copyWith(
+              color: const Color(0xFF1F2937),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search, color: const Color(0xFF9CA3AF), size: 20.sp),
+          TSpaces.h8(),
+          Expanded(
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Cari kelompok tani...',
+                hintStyle: TGoogleTextStyleConst.inter12Regular.copyWith(
+                  color: const Color(0xFF9CA3AF),
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 10.h),
+              ),
+              style: TGoogleTextStyleConst.inter12Regular,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -246,31 +356,59 @@ class PertanianView extends GetView<PertanianController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Daftar Kelompok Tani',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Daftar Kelompok Tani',
+              style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+                color: const Color(0xFF1F2937),
+              ),
+            ),
+            Obx(() {
+              final total = controller.filteredKelompokList.length;
+              if (total == 0) return const SizedBox.shrink();
+
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+                child: Text(
+                  '$total',
+                  style: TGoogleTextStyleConst.inter12Medium.copyWith(
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+              );
+            }),
+          ],
         ),
-        const SizedBox(height: 12),
+        TSpaces.v12(),
         Obx(() {
           if (controller.isLoading.value) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
-                child: CircularProgressIndicator(),
+                padding: EdgeInsets.all(32.w),
+                child: const CircularProgressIndicator(
+                  color: Color(0xFF60A5FA),
+                  strokeWidth: 2,
+                ),
               ),
             );
           }
 
-          if (controller.kelompokTaniList.isEmpty) {
-            return _buildEmptyKelompok();
+          if (controller.filteredKelompokList.isEmpty) {
+            return _buildEmptyState();
           }
 
           return ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: controller.kelompokTaniList.length,
+            itemCount: controller.filteredKelompokList.length,
             itemBuilder: (context, index) {
-              final kelompok = controller.kelompokTaniList[index];
+              final kelompok = controller.filteredKelompokList[index];
               return _buildKelompokCard(kelompok, context);
             },
           );
@@ -283,53 +421,53 @@ class PertanianView extends GetView<PertanianController> {
     Map<String, dynamic> kelompok,
     BuildContext context,
   ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: InkWell(
         onTap: () => _showKelompokDetail(context, kelompok),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(14.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(8.w),
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(6.r),
                     ),
                     child: Icon(
-                      Icons.agriculture,
-                      color: Colors.green[700],
-                      size: 24,
+                      Icons.agriculture_rounded,
+                      color: const Color(0xFF60A5FA),
+                      size: 20.sp,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  TSpaces.h12(),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           kelompok['nama_kelompok'] ?? '-',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                          style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+                            color: const Color(0xFF1F2937),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        TSpaces.v4(),
                         Text(
                           'Kode: ${kelompok['kode_kelompok'] ?? '-'}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
+                          style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                            color: const Color(0xFF9CA3AF),
                           ),
                         ),
                       ],
@@ -337,33 +475,63 @@ class PertanianView extends GetView<PertanianController> {
                   ),
                   Obx(() {
                     if (!controller.isAdmin.value) {
-                      return const Icon(
+                      return Icon(
                         Icons.chevron_right,
-                        color: Colors.grey,
+                        color: const Color(0xFF9CA3AF),
+                        size: 20.sp,
                       );
                     }
-                    return PopupMenuButton(
-                      icon: const Icon(Icons.more_vert),
+                    return PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: const Color(0xFF6B7280),
+                        size: 20.sp,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      color: Colors.white,
+                      elevation: 4,
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'edit',
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 10.h,
+                          ),
                           child: Row(
                             children: [
-                              Icon(Icons.edit, size: 20),
-                              SizedBox(width: 12),
-                              Text('Edit'),
+                              Icon(
+                                Icons.edit_outlined,
+                                size: 18.sp,
+                                color: const Color(0xFF60A5FA),
+                              ),
+                              TSpaces.h12(),
+                              Text(
+                                'Edit',
+                                style: TGoogleTextStyleConst.inter14Regular,
+                              ),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 10.h,
+                          ),
                           child: Row(
                             children: [
-                              Icon(Icons.delete, size: 20, color: Colors.red),
-                              SizedBox(width: 12),
+                              Icon(
+                                Icons.delete_outline,
+                                size: 18.sp,
+                                color: const Color(0xFFEF4444),
+                              ),
+                              TSpaces.h12(),
                               Text(
                                 'Hapus',
-                                style: TextStyle(color: Colors.red),
+                                style: TGoogleTextStyleConst.inter14Regular
+                                    .copyWith(color: const Color(0xFFEF4444)),
                               ),
                             ],
                           ),
@@ -373,26 +541,26 @@ class PertanianView extends GetView<PertanianController> {
                         if (value == 'edit') {
                           _showKelompokForm(context, kelompok: kelompok);
                         } else if (value == 'delete') {
-                          _confirmDeleteKelompok(context, kelompok);
+                          _confirmDelete(context, kelompok);
                         }
                       },
                     );
                   }),
                 ],
               ),
-              const Divider(height: 24),
+              Divider(height: 20.h, color: const Color(0xFFE5E7EB)),
               Row(
                 children: [
                   Expanded(
                     child: _buildInfoItem(
-                      Icons.person,
+                      Icons.person_outline,
                       'Ketua',
                       kelompok['ketua_kelompok'] ?? '-',
                     ),
                   ),
                   Expanded(
                     child: _buildInfoItem(
-                      Icons.grass,
+                      Icons.eco_outlined,
                       'Komoditas',
                       kelompok['komoditas'] ?? '-',
                     ),
@@ -409,21 +577,22 @@ class PertanianView extends GetView<PertanianController> {
   Widget _buildInfoItem(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
-        const SizedBox(width: 6),
+        Icon(icon, size: 16.sp, color: const Color(0xFF9CA3AF)),
+        TSpaces.h8(),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                style: TGoogleTextStyleConst.inter10Regular.copyWith(
+                  color: const Color(0xFF9CA3AF),
+                ),
               ),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                style: TGoogleTextStyleConst.inter12Medium.copyWith(
+                  color: const Color(0xFF4B5563),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -435,31 +604,35 @@ class PertanianView extends GetView<PertanianController> {
     );
   }
 
-  Widget _buildEmptyKelompok() {
+  Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(40.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.agriculture, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
+            Icon(
+              Icons.agriculture_rounded,
+              size: 48.sp,
+              color: const Color(0xFFD1D5DB),
+            ),
+            TSpaces.v12(),
             Text(
               'Belum ada kelompok tani',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+              style: TGoogleTextStyleConst.inter14Medium.copyWith(
+                color: const Color(0xFF6B7280),
               ),
             ),
-            const SizedBox(height: 8),
+            TSpaces.v8(),
             Text(
               'Tambahkan kelompok tani baru',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                color: const Color(0xFF9CA3AF),
+              ),
             ),
           ],
         ),
@@ -471,6 +644,11 @@ class PertanianView extends GetView<PertanianController> {
     BuildContext context, {
     Map<String, dynamic>? kelompok,
   }) {
+    if (kelompok != null) {
+      controller.populateKelompokForm(kelompok);
+    } else {
+      controller.clearKelompokForm();
+    }
     Get.toNamed(Routes.KELOMPOK_FORM, arguments: kelompok ?? {});
   }
 
@@ -478,32 +656,47 @@ class PertanianView extends GetView<PertanianController> {
     BuildContext context,
     Map<String, dynamic> kelompok,
   ) {
-    // Use Routes constant instead of string
     Get.toNamed(Routes.KELOMPOK_DETAIL, arguments: kelompok);
   }
 
-  void _confirmDeleteKelompok(
-    BuildContext context,
-    Map<String, dynamic> kelompok,
-  ) {
+  void _confirmDelete(BuildContext context, Map<String, dynamic> kelompok) {
     Get.dialog(
       AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        backgroundColor: Colors.white,
+        title: Text(
+          'Konfirmasi Hapus',
+          style: TGoogleTextStyleConst.inter14SemiBold,
+        ),
         content: Text(
           'Apakah Anda yakin ingin menghapus kelompok "${kelompok['nama_kelompok']}"?\n\nSemua data anggota akan ikut terhapus.',
+          style: TGoogleTextStyleConst.inter14Regular,
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Batal',
+              style: TGoogleTextStyleConst.inter14Medium.copyWith(
+                color: const Color(0xFF6B7280),
+              ),
+            ),
+          ),
           ElevatedButton(
             onPressed: () {
               Get.back();
               controller.deleteKelompokTani(kelompok['id']);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6.r),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
             ),
-            child: const Text('Hapus'),
+            child: Text('Hapus', style: TGoogleTextStyleConst.inter14Medium),
           ),
         ],
       ),
