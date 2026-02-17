@@ -7,9 +7,12 @@ import '../../profile/controllers/profile_controller.dart';
 class MainBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<MainController>(() => MainController());
-    Get.lazyPut<HomeController>(() => HomeController());
-    Get.lazyPut<NewsController>(() => NewsController());
-    Get.lazyPut<ProfileController>(() => ProfileController());
+    Get.lazyPut<MainController>(() => MainController(), fenix: true);
+
+    Get.lazyPut<HomeController>(() => HomeController(), fenix: true);
+
+    Get.lazyPut<NewsController>(() => NewsController(), fenix: true);
+
+    Get.lazyPut<ProfileController>(() => ProfileController(), fenix: true);
   }
 }

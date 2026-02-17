@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sumberkerto_smart_village/app/common/spaces.dart';
@@ -15,22 +16,26 @@ class PertanianView extends GetView<PertanianController> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
+        backgroundColor: TColorsConst.white,
+
+        elevation: 0,
+
+        scrolledUnderElevation: 0,
+
+        surfaceTintColor: Colors.transparent,
+
+        shadowColor: Colors.transparent,
+
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+
+        centerTitle: true,
+
         title: Text(
-          'Kelompok Tani',
-          style: TGoogleTextStyleConst.inter16SemiBold.copyWith(
-            color: const Color(0xFF1F2937),
+          'kelompok Tani',
+          style: TGoogleTextStyleConst.inter18SemiBold.copyWith(
+            color: TColorsConst.black,
           ),
         ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Color(0xFF1F2937)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF6B7280)),
-            onPressed: () => controller.refreshData(),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () => controller.refreshData(),

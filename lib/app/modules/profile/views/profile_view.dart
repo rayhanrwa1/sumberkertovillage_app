@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,8 +19,19 @@ class ProfileView extends GetView<ProfileController> {
       backgroundColor: TColorsConst.white,
       appBar: AppBar(
         backgroundColor: TColorsConst.white,
+
         elevation: 0,
+
+        scrolledUnderElevation: 0,
+
+        surfaceTintColor: Colors.transparent,
+
+        shadowColor: Colors.transparent,
+
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+
         centerTitle: true,
+
         title: Text(
           'Profil',
           style: TGoogleTextStyleConst.inter18SemiBold.copyWith(

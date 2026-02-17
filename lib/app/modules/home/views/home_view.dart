@@ -277,27 +277,33 @@ class HomeView extends GetView<HomeController> {
         'image': TAssetsConst.iconPemetaan,
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
         'route': Routes.PEMETAAN,
+        'enabled': true,
       },
       {
         'title': 'Profil Desa',
         'subtitle': 'Sejarah, visi-misi, dan data desa',
-        'image': TAssetsConst.iconDesa, // Ganti dengan icon yang sesuai
+        'image': TAssetsConst.iconDesa,
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
         'route': Routes.VILLAGE_PROFILE,
+        'enabled': true,
       },
-      // {
-      //   'title': 'Data Penduduk',
-      //   'subtitle': 'NIK, KK, RT/RW, status warga',
-      //   'image': TAssetsConst.iconPenduduk,
-      //   'bgColor': const Color.fromARGB(255, 255, 255, 255),
-      //   'route': '', // Belum ada route
-      // },
       {
         'title': 'Data Pertanian',
         'subtitle': 'Luas sawah, panen padi, pupuk',
         'image': TAssetsConst.iconPertanian,
         'bgColor': const Color.fromARGB(255, 255, 255, 255),
         'route': Routes.PERTANIAN,
+        'enabled': true,
+      },
+
+      /// DISABLED
+      {
+        'title': 'E-Surat',
+        'subtitle': 'Surat keterangan, domisili, dan lainnya',
+        'image': TAssetsConst.iconPenduduk,
+        'bgColor': const Color.fromARGB(255, 255, 255, 255),
+        'route': '',
+        'enabled': false,
       },
     ];
 
@@ -309,12 +315,14 @@ class HomeView extends GetView<HomeController> {
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final service = services[index];
+
         return _buildServiceCard(
           title: service['title'] as String,
           subtitle: service['subtitle'] as String,
           imagePath: service['image'] as String,
           bgColor: service['bgColor'] as Color,
           route: service['route'] as String,
+          enabled: service['enabled'] as bool,
         );
       },
     );
@@ -326,122 +334,90 @@ class HomeView extends GetView<HomeController> {
     required String imagePath,
     required Color bgColor,
     required String route,
+    required bool enabled,
   }) {
-    return Obx(() {
-      final isEnabled = controller.isProfileComplete.value;
-
-      return Container(
-        decoration: BoxDecoration(
-          color: TColorsConst.white,
+    return Container(
+      decoration: BoxDecoration(
+        color: TColorsConst.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: TColorsConst.neutral300.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: TColorsConst.neutral300.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: isEnabled && route.isNotEmpty
-                ? () {
-                    Get.toNamed(route);
-                  }
-                : null,
-            child: Opacity(
-              opacity: isEnabled ? 1.0 : 0.5,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ColorFiltered(
-                        colorFilter: isEnabled
-                            ? const ColorFilter.mode(
-                                Colors.transparent,
-                                BlendMode.multiply,
-                              )
-                            : const ColorFilter.matrix([
-                                0.2126,
-                                0.7152,
-                                0.0722,
-                                0,
-                                0,
-                                0.2126,
-                                0.7152,
-                                0.0722,
-                                0,
-                                0,
-                                0.2126,
-                                0.7152,
-                                0.0722,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                1,
-                                0,
-                              ]),
-                        child: Image.asset(
-                          imagePath,
-                          width: 28,
-                          height: 28,
-                          fit: BoxFit.contain,
+
+          /// DISABLED
+          onTap: enabled
+              ? () {
+                  Get.toNamed(route);
+                }
+              : null,
+
+          child: Opacity(
+            opacity: enabled ? 1.0 : 0.4,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Image.asset(imagePath, width: 28, height: 28),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TGoogleTextStyleConst.inter14SemiBold.copyWith(
+                            color: enabled
+                                ? TColorsConst.neutral800
+                                : TColorsConst.neutral400,
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TGoogleTextStyleConst.inter14SemiBold
-                                .copyWith(
-                                  color: isEnabled
-                                      ? TColorsConst.neutral800
-                                      : TColorsConst.neutral400,
-                                ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: TGoogleTextStyleConst.inter12Regular.copyWith(
+                            color: enabled
+                                ? TColorsConst.neutral500
+                                : TColorsConst.neutral400,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            subtitle,
-                            style: TGoogleTextStyleConst.inter12Regular
-                                .copyWith(
-                                  color: isEnabled
-                                      ? TColorsConst.neutral500
-                                      : TColorsConst.neutral400,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    Icon(
-                      PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
-                      color: isEnabled
-                          ? TColorsConst.neutral400
-                          : TColorsConst.neutral300,
-                      size: 20,
-                    ),
-                  ],
-                ),
+                  ),
+
+                  /// ICON
+                  Icon(
+                    enabled
+                        ? PhosphorIcons.caretRight(PhosphorIconsStyle.bold)
+                        : PhosphorIcons.lock(PhosphorIconsStyle.bold),
+
+                    color: enabled
+                        ? TColorsConst.neutral400
+                        : TColorsConst.neutral300,
+                  ),
+                ],
               ),
             ),
           ),
         ),
-      );
-    });
+      ),
+    );
   }
 }

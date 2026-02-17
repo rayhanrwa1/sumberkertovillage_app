@@ -178,13 +178,15 @@ class NewsView extends GetView<NewsController> {
   }) {
     Color getColor() {
       if (!isSelected) return Colors.grey[600]!;
-      return type == 'video' ? Colors.red : const Color(0xFF2C3E50);
+      return type == 'video'
+          ? const Color.fromARGB(255, 39, 154, 255)
+          : const Color(0xFF2C3E50);
     }
 
     Color getBgColor() {
       if (!isSelected) return Colors.white;
       return type == 'video'
-          ? Colors.red.withOpacity(0.1)
+          ? const Color.fromARGB(255, 255, 255, 255).withOpacity(0.1)
           : const Color(0xFF2C3E50).withOpacity(0.1);
     }
 

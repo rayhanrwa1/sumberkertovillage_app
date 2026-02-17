@@ -32,6 +32,7 @@ abstract class Routes {
   static const KELOMPOK_DETAIL = _Paths.KELOMPOK_DETAIL;
   static const ANGGOTA_FORM = _Paths.ANGGOTA_FORM;
   static const MYPROFILE = _Paths.MYPROFILE;
+  static const ESURAT = _Paths.ESURAT;
 }
 
 abstract class _Paths {
@@ -67,4 +68,5 @@ abstract class _Paths {
   static const KELOMPOK_DETAIL = '/kelompok-detail';
   static const ANGGOTA_FORM = '/anggota-form';
   static const MYPROFILE = '/myprofile';
+  static const ESURAT = '/esurat';
 }

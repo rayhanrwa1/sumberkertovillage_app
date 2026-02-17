@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:sumberkerto_smart_village/app/core/const/color_const.dart';
+import 'package:sumberkerto_smart_village/app/core/const/google_text_style_const.dart';
 import 'package:sumberkerto_smart_village/app/data/models/news_model.dart';
 import '../controllers/myprofile_controller.dart';
 
@@ -12,17 +15,26 @@ class MyprofileView extends GetView<MyprofileController> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: TColorsConst.white,
+
         elevation: 0,
-        title: const Text(
+
+        scrolledUnderElevation: 0,
+
+        surfaceTintColor: Colors.transparent,
+
+        shadowColor: Colors.transparent,
+
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+
+        centerTitle: true,
+
+        title: Text(
           'Profil Saya',
-          style: TextStyle(
-            color: Color(0xFF1a1a1a),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+          style: TGoogleTextStyleConst.inter18SemiBold.copyWith(
+            color: TColorsConst.black,
           ),
         ),
-        centerTitle: false,
       ),
       body: RefreshIndicator(
         onRefresh: controller.refreshData,
